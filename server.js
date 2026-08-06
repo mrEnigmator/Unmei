@@ -23,6 +23,8 @@ const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, "dane");
 const PLIK_ZDARZEN = path.join(DATA_DIR, "zdarzenia.ndjson");
 const PLIK_GOSCI = path.join(DATA_DIR, "goscie.json");
 const WAZNOSC_TOKENU_MS = 24 * 60 * 60 * 1000;
+/* sekretna ścieżka panelu — ustaw PANEL_SCIEZKA w env; domyślnie "adminjinja" */
+const PANEL_SCIEZKA = "/" + (process.env.PANEL_SCIEZKA || "adminjinja").replace(/^\/+/, "");
 
 fs.mkdirSync(DATA_DIR, { recursive: true });
 
@@ -147,8 +149,8 @@ async function apiOdpowiedz(req, res) {
     dataSlownie: dane.dataSlownie ?? null,
     pora: dane.pora ?? null,
     probyOdmowy: dane.probyOdmowy ?? null,
-    gosc: dane.gosc ?? null,
-    goscId: dane.goscId ?? null,
+    gosc: dane.kto ?? dane.gosc ?? null,
+    goscId: dane.ktoId ?? dane.goscId ?? null,
     pole: dane.pole ?? null,
     wartosc: dane.wartosc ?? null,
     czasGrySekundy: dane.czasGrySekundy ?? null,
@@ -239,19 +241,18 @@ async function zapiszGosci(goscie) {
 
 async function apiBramaStatus(url, res) {
   const goscie = await wczytajGosci();
-  const id = url.searchParams.get("gosc");
+  const id = url.searchParams.get("k") || url.searchParams.get("gosc");
   json(res, {
     ok: true,
     wymagane: goscie.length > 0,
-    /* pozwala frontendowi sprawdzić, czy zapamiętany w sesji gość nadal istnieje */
-    goscWazny: id ? goscie.some(g => g.id === id) : null
+    wazne: id ? goscie.some(g => g.id === id) : null
   });
 }
 
 async function apiBramaOtworz(req, res) {
   if (zablokowany(req)) return zaDuzoProb(res);
   const goscie = await wczytajGosci();
-  if (goscie.length === 0) return json(res, { ok: true, gosc: null }); /* brama wyłączona */
+  if (goscie.length === 0) return json(res, { ok: true, wejscie: null }); /* brama wyłączona */
 
   let dane;
   try {
@@ -263,7 +264,7 @@ async function apiBramaOtworz(req, res) {
   const haslo = String(dane?.haslo || "").trim().toLowerCase();
   for (const g of goscie) {
     if (bezpiecznePorownanie(haslo, String(g.haslo).trim().toLowerCase())) {
-      return json(res, { ok: true, gosc: { id: g.id, imie: g.imie, jezyk: g.jezyk || "pl" } });
+      return json(res, { ok: true, wejscie: { id: g.id, imie: g.imie, jezyk: g.jezyk || "pl" } });
     }
   }
   zanotujNieudanaProbe(req);
@@ -273,7 +274,7 @@ async function apiBramaOtworz(req, res) {
 /* --- publiczne: awatar gościa do gry --- */
 
 async function apiAwatarPubliczny(url, res) {
-  const id = url.searchParams.get("gosc") || "";
+  const id = url.searchParams.get("k") || url.searchParams.get("gosc") || "";
   const goscie = await wczytajGosci();
   const gosc = goscie.find(g => g.id === id);
   if (!gosc || !gosc.awatar) return json(res, { ok: false, blad: "Brak awatara" }, 404);
@@ -447,9 +448,6 @@ async function apiWyczyscDaneGoscia(req, res, url) {
 const STATYCZNE = {
   "/": { plik: "index.html", typ: "text/html; charset=utf-8" },
   "/index.html": { plik: "index.html", typ: "text/html; charset=utf-8" },
-  "/jinja-kanri": { plik: "jinja-kanri.html", typ: "text/html; charset=utf-8" },
-  "/jinja-kanri.html": { plik: "jinja-kanri.html", typ: "text/html; charset=utf-8" },
-  "/adminjinja": { plik: "jinja-kanri.html", typ: "text/html; charset=utf-8" },
 };
 
 async function serwujStatyczny(res, wpis) {
@@ -479,7 +477,8 @@ const serwer = http.createServer(async (req, res) => {
     if (sciezka === "/api/admin/awatar" && req.method === "POST") return await apiAwatarZapisz(req, res, url);
     if (sciezka === "/api/admin/awatar" && req.method === "DELETE") return await apiAwatarUsun(req, res, url);
 
-    const wpis = STATYCZNE[sciezka];
+    let wpis = STATYCZNE[sciezka];
+    if (!wpis && sciezka === PANEL_SCIEZKA) wpis = { plik: "jinja-kanri.html", typ: "text/html; charset=utf-8" };
     if (wpis && (req.method === "GET" || req.method === "HEAD")) return await serwujStatyczny(res, wpis);
 
     json(res, { ok: false, blad: "Nie znaleziono" }, 404);

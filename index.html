@@ -1080,17 +1080,17 @@
 const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 /* ---------- wysyłanie zdarzeń (błędy ignorowane po cichu) ---------- */
-let goscInfo = null; /* {id, imie} po przejściu bariery */
+let sesjaWejscia = null;
 
-/* unmei.cloud/?reset — czyści zapamiętanego gościa (przydatne do testów różnych profili) */
+/* ?reset — czyści zapamiętane wejście */
 if (new URLSearchParams(location.search).has("reset")) {
-  try { sessionStorage.removeItem("gosc"); } catch (e) {}
+  try { sessionStorage.removeItem("wejscie"); } catch (e) {}
   history.replaceState(null, "", location.pathname);
 }
 
-try { goscInfo = JSON.parse(sessionStorage.getItem("gosc") || "null"); } catch (e) {}
+try { sesjaWejscia = JSON.parse(sessionStorage.getItem("wejscie") || "null"); } catch (e) {}
 
-/* ---------- języki: polski (bazowy) i angielski, przypięte do profilu gościa ---------- */
+/* ---------- wersje językowe ---------- */
 let JEZYK = "pl";
 
 const TEKSTY = {
@@ -1257,8 +1257,8 @@ function wyslijZdarzenie(dane) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         ...dane,
-        gosc: goscInfo ? goscInfo.imie : null,
-        goscId: goscInfo ? goscInfo.id : null,
+        kto: sesjaWejscia ? sesjaWejscia.imie : null,
+        ktoId: sesjaWejscia ? sesjaWejscia.id : null,
         timestamp: new Date().toISOString(),
         userAgent: navigator.userAgent
       })
@@ -1268,27 +1268,27 @@ function wyslijZdarzenie(dane) {
 
 wyslijZdarzenie({ typ: "wizyta" });
 
-/* ---------- bariera świątyni (słowo-klucz gościa) ---------- */
+/* ---------- bariera świątyni ---------- */
 const formBariery = document.getElementById("formBariery");
 const bladBariery = document.getElementById("bladBariery");
 
 async function initBariera() {
   try {
-    const adres = "/api/brama" + (goscInfo ? "?gosc=" + encodeURIComponent(goscInfo.id) : "");
+    const adres = "/api/brama" + (sesjaWejscia ? "?k=" + encodeURIComponent(sesjaWejscia.id) : "");
     const odp = await fetch(adres);
     const dane = await odp.json();
 
-    /* zapamiętany gość, który wciąż istnieje — wchodzi bez pytania */
-    if (goscInfo && dane.goscWazny) {
-      zaladujAwatarGoscia();
-      if (goscInfo.jezyk) ustawJezyk(goscInfo.jezyk);
+    /* ważna sesja — wchodzi bez pytania */
+    if (sesjaWejscia && dane.wazne) {
+      zaladujAwatar();
+      if (sesjaWejscia.jezyk) ustawJezyk(sesjaWejscia.jezyk);
       return;
     }
 
-    /* gość usunięty w panelu albo nieznany — czyścimy sesję */
-    if (goscInfo) {
-      goscInfo = null;
-      try { sessionStorage.removeItem("gosc"); } catch (e) {}
+    /* nieaktualna sesja — czyścimy */
+    if (sesjaWejscia) {
+      sesjaWejscia = null;
+      try { sessionStorage.removeItem("wejscie"); } catch (e) {}
     }
 
     if (dane.wymagane) {
@@ -1297,7 +1297,7 @@ async function initBariera() {
     }
   } catch (e) {
     /* brak backendu (podgląd z dysku) — bez bariery */
-    if (goscInfo) zaladujAwatarGoscia();
+    if (sesjaWejscia) zaladujAwatar();
   }
 }
 
@@ -1315,10 +1315,10 @@ formBariery.addEventListener("submit", async (e) => {
     const dane = await odp.json();
 
     if (dane.ok) {
-      goscInfo = dane.gosc || null;
-      try { sessionStorage.setItem("gosc", JSON.stringify(goscInfo)); } catch (err) {}
-      zaladujAwatarGoscia();
-      if (goscInfo && goscInfo.jezyk) ustawJezyk(goscInfo.jezyk);
+      sesjaWejscia = dane.wejscie || null;
+      try { sessionStorage.setItem("wejscie", JSON.stringify(sesjaWejscia)); } catch (err) {}
+      zaladujAwatar();
+      if (sesjaWejscia && sesjaWejscia.jezyk) ustawJezyk(sesjaWejscia.jezyk);
       wyslijZdarzenie({ typ: "etap", etap: "brama" });
       document.getElementById("etap0").classList.remove("aktywny");
       document.getElementById("etap1").classList.add("aktywny");
@@ -1567,15 +1567,15 @@ const btnPominGre = document.getElementById("btnPominGre");
 
 let gra = null; /* stan bieżącej rozgrywki */
 
-/* awatar gościa wgrany w panelu admina (opcjonalny — bez niego gra liskiem) */
+/* awatar postaci (opcjonalny — domyślnie gra lisek) */
 const awatarGracza = new Image();
 let awatarJest = false;
 awatarGracza.onload = () => { awatarJest = true; };
 
-function zaladujAwatarGoscia() {
-  if (!goscInfo || !goscInfo.id) return;
+function zaladujAwatar() {
+  if (!sesjaWejscia || !sesjaWejscia.id) return;
   awatarJest = false;
-  try { awatarGracza.src = "/api/awatar?gosc=" + encodeURIComponent(goscInfo.id) + "&t=" + Date.now(); } catch (e) {}
+  try { awatarGracza.src = "/api/awatar?k=" + encodeURIComponent(sesjaWejscia.id) + "&t=" + Date.now(); } catch (e) {}
 }
 
 initBariera();
@@ -2332,7 +2332,7 @@ btnPieczec.addEventListener("click", () => {
     /* dane */
     c.fillStyle = "#3c2f26";
     c.font = "700 34px 'Playfair Display', 'Shippori Mincho', serif";
-    c.fillText(goscInfo && goscInfo.imie ? goscInfo.imie : T("gWybranka"), 310, 540);
+    c.fillText(sesjaWejscia && sesjaWejscia.imie ? sesjaWejscia.imie : T("gWybranka"), 310, 540);
     c.fillStyle = "#8a7a63";
     c.font = "20px 'Lato', 'Zen Kaku Gothic New', sans-serif";
     c.fillText(T("gPoznala"), 310, 572);
