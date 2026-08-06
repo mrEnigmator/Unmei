@@ -968,6 +968,13 @@ const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matc
 
 /* ---------- wysyłanie zdarzeń (błędy ignorowane po cichu) ---------- */
 let goscInfo = null; /* {id, imie} po przejściu bariery */
+
+/* unmei.cloud/?reset — czyści zapamiętanego gościa (przydatne do testów różnych profili) */
+if (new URLSearchParams(location.search).has("reset")) {
+  try { sessionStorage.removeItem("gosc"); } catch (e) {}
+  history.replaceState(null, "", location.pathname);
+}
+
 try { goscInfo = JSON.parse(sessionStorage.getItem("gosc") || "null"); } catch (e) {}
 
 function wyslijZdarzenie(dane) {

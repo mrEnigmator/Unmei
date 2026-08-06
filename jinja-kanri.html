@@ -357,6 +357,51 @@
   .gosc-form { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
   .gosc-form input { flex: 1; min-width: 140px; }
 
+  .gosc-wiersz { cursor: pointer; }
+  .gosc-wiersz:hover .imie { color: var(--zloto); }
+
+  .gosc-strzalka {
+    flex: 0 0 auto;
+    color: var(--tekst-przyg);
+    font-size: 0.8rem;
+    transition: transform 0.25s ease;
+  }
+
+  .gosc-blok.otwarty .gosc-strzalka { transform: rotate(90deg); }
+
+  .gosc-szczegoly {
+    display: none;
+    margin: 4px 0 10px 14px;
+    padding: 14px 16px;
+    background: rgba(245, 239, 226, 0.04);
+    border-left: 2px solid var(--zloto);
+    border-radius: 0 10px 10px 0;
+    font-size: 0.88rem;
+  }
+
+  .gosc-blok.otwarty .gosc-szczegoly { display: block; animation: wjazd 0.3s ease both; }
+
+  .gosc-szczegoly .odpowiedz {
+    color: var(--zloto);
+    font-family: "Shippori Mincho", serif;
+    font-weight: 700;
+    font-size: 1.05rem;
+    margin-bottom: 4px;
+  }
+
+  .gosc-szczegoly .brak-odpowiedzi { color: var(--tekst-przyg); font-style: italic; margin-bottom: 4px; }
+
+  .gosc-szczegoly .metryki {
+    display: flex;
+    gap: 14px;
+    flex-wrap: wrap;
+    color: var(--tekst-przyg);
+    font-size: 0.78rem;
+    margin: 8px 0 12px;
+  }
+
+  .gosc-szczegoly .metryki b { color: var(--sakura); font-weight: 700; }
+
   /* ---------- oś czasu ---------- */
   .dzien-separator {
     margin: 16px 0 6px;
@@ -973,6 +1018,70 @@ const listaGosci = document.getElementById("listaGosci");
 const goscStatus = document.getElementById("goscStatus");
 const plikAwatara = document.getElementById("plikAwatara");
 let awatarDlaGoscia = null; /* id gościa, dla którego wgrywamy zdjęcie */
+let ostatniGoscie = []; /* ostatnio pobrana lista gości */
+
+function zdarzeniaGoscia(g) {
+  return zdarzenia.filter(z => z.goscId === g.id || (z.gosc && z.gosc === g.imie));
+}
+
+function renderujSzczegolyGoscia(g) {
+  const jej = zdarzeniaGoscia(g);
+  if (jej.length === 0) {
+    return '<p class="brak-odpowiedzi">Jeszcze nie weszła do świątyni — czekamy. ⛩️</p>';
+  }
+
+  const finaly = jej.filter(z => z.typ === "final");
+  let html = "";
+
+  if (finaly.length > 0) {
+    const f = finaly[0];
+    html += '<div class="odpowiedz">💮 ' + esc(f.ema || "?") + " · " + esc(f.dataSlownie || f.data || "?") +
+      (f.pora ? " · " + esc(f.pora) : "") + "</div>" +
+      '<div class="brak-odpowiedzi" style="font-size:0.78rem;">przypieczętowała los ' + czasWzgledny(f.timestamp) + " (" + czasAbsolutny(f.timestamp) + ")</div>";
+  } else {
+    html += '<p class="brak-odpowiedzi">Jeszcze nie wybrała — najdalej doszła: ' + esc(najdalszyKrok(jej)) + "</p>";
+  }
+
+  const wejscia = jej.filter(z => z.etap === "brama").length;
+  const proby = jej.reduce((m, z) => Math.max(m, z.probyOdmowy || 0), 0);
+  const gra = jej.find(z => z.etap === "gra-ukonczona");
+  const urzadzenia = [...new Set(jej.map(z => urzadzenie(z.userAgent)))].filter(u => u !== "?");
+  const pierwsze = jej[jej.length - 1];
+  const ostatnie = jej[0];
+
+  html += '<div class="metryki">' +
+    "<span>wejść przez barierę: <b>" + wejscia + "</b></span>" +
+    "<span>zdarzeń: <b>" + jej.length + "</b></span>" +
+    "<span>prób „Odrzucam los”: <b>" + proby + "</b></span>" +
+    (gra ? "<span>gra: <b>" + (gra.pominieta ? "pominięta" : (gra.czasGrySekundy ?? "?") + " s, trafień: " + (gra.trafieniaWLampiony ?? "?")) + "</b></span>" : "") +
+    "<span>urządzenia: <b>" + (urzadzenia.length ? esc(urzadzenia.join(", ")) : "—") + "</b></span>" +
+    "<span>pierwszy raz: <b>" + czasWzgledny(pierwsze.timestamp) + "</b></span>" +
+    "<span>ostatnio: <b>" + czasWzgledny(ostatnie.timestamp) + "</b></span>" +
+    "</div>";
+
+  html += jej.slice(0, 15).map(z => {
+    const o = opisZdarzeniaBez(z);
+    return '<div class="zdarzenie">' +
+      '<span class="ikona">' + o.ikona + "</span>" +
+      '<span class="opis">' + esc(o.tekst) + "</span>" +
+      '<span class="czas" title="' + esc(czasAbsolutny(z.timestamp)) + '">' + czasWzgledny(z.timestamp) + "</span>" +
+      "</div>";
+  }).join("");
+
+  if (jej.length > 15) html += '<p class="brak-odpowiedzi" style="margin-top:8px;">…i ' + (jej.length - 15) + " starszych — pełna historia w zakładce Logi (wpisz jej imię w szukajkę)</p>";
+
+  return html;
+}
+
+function najdalszyKrok(jej) {
+  if (jej.some(z => z.typ === "etap" && z.etap === 5)) return "kalendarz";
+  if (jej.some(z => z.typ === "etap" && z.etap === 4)) return "tabliczki ema";
+  if (jej.some(z => z.etap === "gra-ukonczona")) return "ukończyła grę";
+  if (jej.some(z => z.etap === "Gra")) return "gra";
+  if (jej.some(z => z.typ === "etap" && z.etap === 3)) return "wróżba 大吉";
+  if (jej.some(z => z.typ === "etap" && z.etap === 2)) return "brama torii";
+  return "weszła przez barierę";
+}
 
 function naglowkiAdmina() {
   return {
@@ -993,8 +1102,10 @@ async function odswiezGosci() {
       return;
     }
 
+    ostatniGoscie = dane.goscie;
     listaGosci.innerHTML = dane.goscie.map(g =>
-      '<div class="gosc-wiersz">' +
+      '<div class="gosc-blok" data-id="' + g.id + '">' +
+      '<div class="gosc-wiersz" data-szczegoly="' + g.id + '" title="Kliknij, żeby zobaczyć jej odpowiedzi">' +
       (g.maAwatar
         ? '<img class="gosc-miniatura" src="/api/awatar?gosc=' + encodeURIComponent(g.id) + '&t=' + Date.now() + '" alt="">'
         : '<div class="gosc-miniatura-brak">🦊</div>') +
@@ -1004,14 +1115,30 @@ async function odswiezGosci() {
       '<button class="btn-cichy" data-akcja="zdjecie" data-id="' + g.id + '" title="Wgraj zdjęcie do gry">📷</button>' +
       (g.maAwatar ? '<button class="btn-cichy" data-akcja="usun-zdjecie" data-id="' + g.id + '" title="Przywróć liska">🦊</button>' : '') +
       '<button class="btn-cichy" data-akcja="usun" data-id="' + g.id + '" data-imie="' + esc(g.imie) + '" title="Usuń gościa">🗑</button>' +
-      '</div></div>'
+      '</div>' +
+      '<span class="gosc-strzalka">▶</span>' +
+      '</div>' +
+      '<div class="gosc-szczegoly"></div>' +
+      '</div>'
     ).join("");
   } catch (e) { /* offline */ }
 }
 
 listaGosci.addEventListener("click", async (e) => {
   const btn = e.target.closest("button[data-akcja]");
-  if (!btn) return;
+
+  /* kliknięcie w wiersz (poza przyciskami) = rozwiń jej odpowiedzi */
+  if (!btn) {
+    const wiersz = e.target.closest(".gosc-wiersz[data-szczegoly]");
+    if (!wiersz) return;
+    const blok = wiersz.closest(".gosc-blok");
+    const gosc = ostatniGoscie.find(g => g.id === wiersz.dataset.szczegoly);
+    if (!gosc) return;
+    const otwarty = blok.classList.toggle("otwarty");
+    if (otwarty) blok.querySelector(".gosc-szczegoly").innerHTML = renderujSzczegolyGoscia(gosc);
+    return;
+  }
+
   const id = btn.dataset.id;
 
   if (btn.dataset.akcja === "kopiuj") {
