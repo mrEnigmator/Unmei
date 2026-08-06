@@ -951,19 +951,12 @@
       <p id="finalTekst"></p>
       <p>Napisz mi <strong>大吉</strong> i uznaję sprawę za przypieczętowaną. よろしくね。</p>
       <button class="btn-glowny" id="btnKopiujFinal" style="margin-top:18px; font-size:0.95rem; padding:12px 22px;">Skopiuj 大吉 📋</button>
-      <p class="podpis" id="finalPodpis"></p>
     </div>
   </section>
 
 </main>
 
 <script>
-/* ============================================================
-   PERSONALIZACJA — wpisz tutaj swoje imię:
-   ============================================================ */
-const TWOJE_IMIE = "Paweł";
-/* ============================================================ */
-
 const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 /* ---------- wysyłanie zdarzeń (błędy ignorowane po cichu) ---------- */
@@ -1900,7 +1893,6 @@ btnPieczec.addEventListener("click", () => {
   tekst += ".";
 
   document.getElementById("finalTekst").textContent = tekst;
-  document.getElementById("finalPodpis").textContent = "— " + TWOJE_IMIE;
 
   document.getElementById("sekcjaKalendarz").style.display = "none";
   document.querySelector(".pory").style.display = "none";
