@@ -518,6 +518,23 @@
 
   .gra-overlay .maly { color: var(--sakura); font-size: 0.95rem; }
 
+  #btnSkok {
+    margin-top: 16px;
+    width: min(440px, 94vw);
+    padding: 18px 0;
+    font-size: 1.15rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, var(--torii) 0%, var(--torii-ciemny) 100%);
+    color: #fff7ef;
+    box-shadow: 0 6px 22px rgba(199, 62, 58, 0.4);
+    border-radius: 14px;
+    touch-action: manipulation;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  #btnSkok:active { transform: scale(0.97); }
+
   #btnPominGre {
     margin-top: 16px;
     display: none;
@@ -774,7 +791,7 @@
     <div class="kanji-naglowek" style="font-size:1.9rem;">試練</div>
     <div class="romaji">shi-ren</div>
     <h2 style="margin-top:16px;">Próba odwagi</h2>
-    <p class="podtytul">Zanim zawiesisz życzenie, duchy świątyni sprawdzą Twoją zwinność. Pomóż liskowi zebrać <strong>7 płatków sakury</strong> — dotknij ekranu (albo naciśnij spację), żeby skoczyć. Podwójny skok działa! Uważaj na lampiony.</p>
+    <p class="podtytul">Zanim zawiesisz życzenie, duchy świątyni sprawdzą Twoją zwinność. Zbierz <strong>7 płatków sakury</strong> — dotknij ekranu (albo naciśnij spację), żeby skoczyć. Podwójny skok działa! Uważaj na lampiony.</p>
 
     <div class="gra-otoczka">
       <canvas id="graCanvas" width="440" height="250" aria-label="Gra: lisek zbiera płatki sakury"></canvas>
@@ -788,6 +805,7 @@
       </div>
     </div>
 
+    <button id="btnSkok" aria-label="Skocz">⛩️ SKOK</button>
     <button id="btnPominGre">duchy litują się — pomiń próbę</button>
   </section>
 
@@ -993,6 +1011,12 @@ const btnPominGre = document.getElementById("btnPominGre");
 
 let gra = null; /* stan bieżącej rozgrywki */
 
+/* awatar postaci wgrany w panelu admina (opcjonalny — bez niego gra liskiem) */
+const awatarGracza = new Image();
+let awatarJest = false;
+awatarGracza.onload = () => { awatarJest = true; };
+try { awatarGracza.src = "/api/awatar?t=" + Date.now(); } catch (e) { /* podgląd z dysku */ }
+
 function startGry() {
   gra = {
     dziala: true,
@@ -1009,7 +1033,22 @@ function startGry() {
     zebrane: 0,
     trafienia: 0,
     nietykalnoscDo: 0,
-    torii: [{ x: 150 }, { x: 380 }] /* dekoracyjne bramy w tle */
+    /* warstwy parallaxy (od najdalszej): góry, pagody, torii, latarnie kamienne */
+    gory: [{ x: 90 }, { x: 330 }],
+    pagody: [{ x: 240 }, { x: 520 }],
+    torii: [{ x: 150 }, { x: 400 }],
+    latarnie: [{ x: 300 }, { x: 560 }],
+    gwiazdy: Array.from({ length: 26 }, () => ({
+      x: Math.random() * 440, y: Math.random() * 120,
+      r: 0.5 + Math.random() * 1.1, faza: Math.random() * 6.28
+    })),
+    chmury: [{ x: 90, y: 52 }, { x: 300, y: 30 }],
+    tloPlatki: Array.from({ length: 8 }, () => ({
+      x: Math.random() * 440, y: Math.random() * 200,
+      vx: -0.4 - Math.random() * 0.5, vy: 0.25 + Math.random() * 0.4,
+      rot: Math.random() * 6.28, obrot: (Math.random() - 0.5) * 0.06
+    })),
+    czastki: []
   };
   graOverlay.classList.remove("widoczny");
   aktualizujHudGry();
@@ -1034,6 +1073,8 @@ function skokGracza() {
 }
 
 graCanvas.addEventListener("pointerdown", (e) => { e.preventDefault(); skokGracza(); });
+document.getElementById("btnSkok").addEventListener("pointerdown", (e) => { e.preventDefault(); skokGracza(); });
+/* klawiatura: spacja/strzałka w górę obsługiwane globalnie poniżej (także gdy fokus jest na przycisku) */
 document.addEventListener("keydown", (e) => {
   if (!document.getElementById("etapGra").classList.contains("aktywny")) return;
   if (e.code === "Space" || e.code === "ArrowUp") { e.preventDefault(); skokGracza(); }
@@ -1093,10 +1134,20 @@ function klatkaGry() {
     g.doPlatka = 55 + Math.random() * 35;
   }
 
-  /* --- ruch świata --- */
+  /* --- ruch świata (parallax: im bliżej, tym szybciej) --- */
   g.przeszkody.forEach(p => p.x -= g.predkosc);
   g.platki.forEach(p => p.x -= g.predkosc);
-  g.torii.forEach(t => { t.x -= g.predkosc * 0.4; if (t.x < -60) t.x = W + 60 + Math.random() * 120; });
+  g.gory.forEach(o => { o.x -= g.predkosc * 0.12; if (o.x < -140) o.x = W + 150 + Math.random() * 120; });
+  g.pagody.forEach(o => { o.x -= g.predkosc * 0.25; if (o.x < -80) o.x = W + 90 + Math.random() * 160; });
+  g.torii.forEach(o => { o.x -= g.predkosc * 0.45; if (o.x < -70) o.x = W + 70 + Math.random() * 140; });
+  g.latarnie.forEach(o => { o.x -= g.predkosc * 0.75; if (o.x < -30) o.x = W + 40 + Math.random() * 260; });
+  g.chmury.forEach(o => { o.x -= 0.18; if (o.x < -90) { o.x = W + 90; o.y = 24 + Math.random() * 46; } });
+  g.tloPlatki.forEach(p => {
+    p.x += p.vx - g.predkosc * 0.2; p.y += p.vy; p.rot += p.obrot;
+    if (p.y > H || p.x < -12) { p.x = W + Math.random() * 60; p.y = -10; }
+  });
+  g.czastki.forEach(cz => { cz.x += cz.vx; cz.y += cz.vy; cz.vy += 0.12; cz.zycie--; });
+  g.czastki = g.czastki.filter(cz => cz.zycie > 0);
   g.przeszkody = g.przeszkody.filter(p => p.x > -40);
   g.platki = g.platki.filter(p => p.x > -40);
 
@@ -1108,6 +1159,13 @@ function klatkaGry() {
       p.zebrany = true;
       g.zebrane++;
       aktualizujHudGry();
+      /* rozbłysk płatków przy zebraniu */
+      for (let i = 0; i < 10; i++) {
+        g.czastki.push({
+          x: p.x, y: p.y, kolor: i % 3 === 0 ? "#d9a441" : "#f6c8d8",
+          vx: (Math.random() - 0.5) * 4.5, vy: -1 - Math.random() * 3, zycie: 26 + Math.random() * 14
+        });
+      }
       if (g.zebrane >= CEL_PLATKOW_GRY) { rysujGre(); zakonczGre(false); return; }
     }
   }
@@ -1119,6 +1177,12 @@ function klatkaGry() {
         g.trafienia++;
         if (g.zebrane > 0) { g.zebrane--; aktualizujHudGry(); }
         g.nietykalnoscDo = g.klatka + 70; /* chwila nietykalności po trafieniu */
+        for (let i = 0; i < 8; i++) {
+          g.czastki.push({
+            x: g.gracz.x, y: g.gracz.y - 12, kolor: "#c73e3a",
+            vx: (Math.random() - 0.5) * 5, vy: -2 - Math.random() * 2, zycie: 20 + Math.random() * 10
+          });
+        }
         break;
       }
     }
@@ -1128,6 +1192,189 @@ function klatkaGry() {
   requestAnimationFrame(klatkaGry);
 }
 
+/* ---------- elementy scenografii ---------- */
+
+function rysujPlatekSakury(c, x, y, rot, r, alpha) {
+  c.save();
+  c.translate(x, y);
+  c.rotate(rot);
+  c.globalAlpha = alpha;
+  const grad = c.createLinearGradient(-r, -r, r, r);
+  grad.addColorStop(0, "#fbdde9");
+  grad.addColorStop(1, "#ef9ebd");
+  c.fillStyle = grad;
+  /* kształt płatka: łezka z wcięciem na czubku */
+  c.beginPath();
+  c.moveTo(0, -r);
+  c.bezierCurveTo(r * 0.9, -r * 0.7, r * 0.85, r * 0.5, 0, r);
+  c.bezierCurveTo(-r * 0.85, r * 0.5, -r * 0.9, -r * 0.7, 0, -r);
+  c.fill();
+  c.globalAlpha = alpha * 0.6;
+  c.strokeStyle = "#fff";
+  c.lineWidth = 0.8;
+  c.beginPath();
+  c.moveTo(0, r * 0.6);
+  c.lineTo(0, -r * 0.5);
+  c.stroke();
+  c.restore();
+}
+
+function rysujKwiatSakury(c, x, y, rot, r) {
+  /* pełny kwiat: 5 płatków wokół złotego środka */
+  for (let i = 0; i < 5; i++) {
+    rysujPlatekSakury(c, x + Math.cos(rot + i * 1.257) * r * 0.62, y + Math.sin(rot + i * 1.257) * r * 0.62, rot + i * 1.257 + 1.57, r * 0.62, 1);
+  }
+  c.beginPath();
+  c.arc(x, y, r * 0.22, 0, 6.29);
+  c.fillStyle = "#d9a441";
+  c.fill();
+}
+
+function rysujChochin(c, x, ziemia, sway) {
+  /* lampion chōchin zawieszony na słupku, kołysze się */
+  const topY = ziemia - 46;
+  c.save();
+  c.translate(x, topY);
+  c.rotate(sway);
+
+  /* sznurek i słupek */
+  c.strokeStyle = "#3a2413";
+  c.lineWidth = 2;
+  c.beginPath(); c.moveTo(0, -6); c.lineTo(0, 2); c.stroke();
+
+  /* poświata */
+  c.shadowColor = "rgba(255, 176, 92, 0.75)";
+  c.shadowBlur = 18;
+
+  /* korpus */
+  const grad = c.createLinearGradient(-11, 0, 11, 0);
+  grad.addColorStop(0, "#8f2b28");
+  grad.addColorStop(0.5, "#e8734f");
+  grad.addColorStop(1, "#8f2b28");
+  c.fillStyle = grad;
+  c.beginPath();
+  c.ellipse(0, 19, 12, 17, 0, 0, 6.29);
+  c.fill();
+  c.shadowBlur = 0;
+
+  /* prążki lampionu */
+  c.strokeStyle = "rgba(58, 36, 19, 0.5)";
+  c.lineWidth = 1;
+  for (let i = -1; i <= 1; i++) {
+    c.beginPath();
+    c.ellipse(0, 19, 12, 17, 0, 0, 6.29);
+    c.moveTo(-12, 19 + i * 8);
+    c.bezierCurveTo(-6, 19 + i * 9.5, 6, 19 + i * 9.5, 12, 19 + i * 8);
+    c.stroke();
+  }
+
+  /* kapturki góra/dół + frędzel */
+  c.fillStyle = "#2b1c12";
+  c.fillRect(-7, 0, 14, 5);
+  c.fillRect(-7, 33, 14, 4);
+  c.strokeStyle = "#d9a441";
+  c.lineWidth = 1.5;
+  c.beginPath(); c.moveTo(0, 37); c.lineTo(0, 44); c.stroke();
+
+  c.restore();
+
+  /* słupek, na którym wisi */
+  c.strokeStyle = "#2b1c12";
+  c.lineWidth = 3;
+  c.beginPath();
+  c.moveTo(x, ziemia + 6);
+  c.lineTo(x, topY - 8);
+  c.lineTo(x, topY - 8);
+  c.stroke();
+}
+
+function rysujToriiTlo(c, x, alpha) {
+  c.save();
+  c.globalAlpha = alpha;
+  c.fillStyle = "#7e2f2c";
+  /* filary lekko rozstawione u dołu */
+  c.beginPath(); c.moveTo(-20 + x, 128); c.lineTo(-24 + x, 206); c.lineTo(-16 + x, 206); c.lineTo(-14 + x, 128); c.fill();
+  c.beginPath(); c.moveTo(20 + x, 128); c.lineTo(24 + x, 206); c.lineTo(16 + x, 206); c.lineTo(14 + x, 128); c.fill();
+  /* kasagi z podniesionymi końcami */
+  c.beginPath();
+  c.moveTo(x - 34, 122);
+  c.quadraticCurveTo(x, 112, x + 34, 122);
+  c.lineTo(x + 34, 128);
+  c.quadraticCurveTo(x, 119, x - 34, 128);
+  c.fill();
+  /* nuki */
+  c.fillRect(x - 26, 138, 52, 6);
+  c.restore();
+}
+
+function rysujPagode(c, x, alpha) {
+  c.save();
+  c.globalAlpha = alpha;
+  c.fillStyle = "#232838";
+  /* trzy kondygnacje z wygiętymi dachami */
+  const pietra = [[36, 118], [30, 146], [24, 172]];
+  for (const [w, y] of pietra) {
+    c.beginPath();
+    c.moveTo(x - w, y + 12);
+    c.quadraticCurveTo(x, y - 8, x + w, y + 12);
+    c.lineTo(x + w - 8, y + 14);
+    c.quadraticCurveTo(x, y, x - w + 8, y + 14);
+    c.fill();
+    c.fillRect(x - w + 12, y + 12, (w - 12) * 2, 16);
+  }
+  /* iglica */
+  c.fillRect(x - 1.5, 96, 3, 18);
+  c.restore();
+}
+
+function rysujGore(c, x, alpha) {
+  c.save();
+  c.globalAlpha = alpha;
+  /* stożek Fuji — sylwetka jaśniejsza od nieba, ciemniejsza u podstawy */
+  const gg = c.createLinearGradient(0, 118, 0, 208);
+  gg.addColorStop(0, "#3a4260");
+  gg.addColorStop(1, "#232a42");
+  c.fillStyle = gg;
+  c.beginPath();
+  c.moveTo(x - 120, 208);
+  c.quadraticCurveTo(x - 40, 130, x - 18, 118);
+  c.lineTo(x + 18, 118);
+  c.quadraticCurveTo(x + 40, 130, x + 120, 208);
+  c.fill();
+  /* śnieżna czapa */
+  c.fillStyle = "rgba(245, 239, 226, 0.55)";
+  c.beginPath();
+  c.moveTo(x - 17, 119);
+  c.lineTo(x + 17, 119);
+  c.lineTo(x + 22, 130);
+  c.lineTo(x + 10, 126);
+  c.lineTo(x + 2, 134);
+  c.lineTo(x - 9, 125);
+  c.lineTo(x - 22, 130);
+  c.fill();
+  c.restore();
+}
+
+function rysujKamiennaLatarnie(c, x, ziemia) {
+  /* tōrō — kamienna latarnia przy ścieżce */
+  c.save();
+  c.fillStyle = "#31394f";
+  c.fillRect(x - 3, ziemia - 16, 6, 22);            /* trzon */
+  c.fillRect(x - 8, ziemia + 4, 16, 3);             /* podstawa */
+  c.beginPath();                                     /* daszek */
+  c.moveTo(x - 10, ziemia - 22);
+  c.quadraticCurveTo(x, ziemia - 30, x + 10, ziemia - 22);
+  c.lineTo(x + 7, ziemia - 19);
+  c.lineTo(x - 7, ziemia - 19);
+  c.fill();
+  /* okienko światła */
+  c.fillStyle = "rgba(255, 196, 110, 0.85)";
+  c.shadowColor = "rgba(255, 196, 110, 0.8)";
+  c.shadowBlur = 8;
+  c.fillRect(x - 3.5, ziemia - 19, 7, 6);
+  c.restore();
+}
+
 function rysujGre() {
   const g = gra;
   const c = graCtx;
@@ -1135,62 +1382,153 @@ function rysujGre() {
 
   c.clearRect(0, 0, W, H);
 
-  /* księżyc */
-  c.beginPath();
-  c.arc(W - 60, 46, 20, 0, 6.29);
-  c.fillStyle = "rgba(244, 233, 200, 0.9)";
-  c.shadowColor = "rgba(244, 233, 200, 0.6)";
-  c.shadowBlur = 24;
-  c.fill();
-  c.shadowBlur = 0;
-
-  /* bramy torii w tle */
-  c.fillStyle = "rgba(199, 62, 58, 0.28)";
-  for (const t of g.torii) {
-    c.fillRect(t.x - 22, 120, 7, 82);
-    c.fillRect(t.x + 15, 120, 7, 82);
-    c.fillRect(t.x - 30, 112, 60, 9);
-    c.fillRect(t.x - 24, 132, 48, 6);
+  /* --- niebo: gwiazdy migoczą --- */
+  for (const s of g.gwiazdy) {
+    const jasnosc = 0.35 + 0.45 * (0.5 + 0.5 * Math.sin(g.klatka / 40 + s.faza));
+    c.beginPath();
+    c.arc(s.x, s.y, s.r, 0, 6.29);
+    c.fillStyle = "rgba(245, 239, 226," + jasnosc.toFixed(2) + ")";
+    c.fill();
   }
 
-  /* ziemia */
-  c.strokeStyle = "rgba(217, 164, 65, 0.5)";
+  /* --- księżyc z aureolą --- */
+  const mg = c.createRadialGradient(W - 62, 44, 4, W - 62, 44, 46);
+  mg.addColorStop(0, "rgba(255, 251, 233, 0.95)");
+  mg.addColorStop(0.45, "rgba(244, 233, 200, 0.85)");
+  mg.addColorStop(0.55, "rgba(244, 233, 200, 0.25)");
+  mg.addColorStop(1, "rgba(244, 233, 200, 0)");
+  c.fillStyle = mg;
+  c.fillRect(W - 120, -14, 120, 120);
+  c.beginPath();
+  c.arc(W - 62, 44, 19, 0, 6.29);
+  c.fillStyle = "#f7eed3";
+  c.fill();
+  /* kratery */
+  c.fillStyle = "rgba(217, 200, 160, 0.5)";
+  c.beginPath(); c.arc(W - 68, 38, 3.4, 0, 6.29); c.fill();
+  c.beginPath(); c.arc(W - 56, 50, 2.3, 0, 6.29); c.fill();
+  c.beginPath(); c.arc(W - 60, 44, 1.6, 0, 6.29); c.fill();
+
+  /* --- chmury --- */
+  c.fillStyle = "rgba(190, 196, 220, 0.12)";
+  for (const ch of g.chmury) {
+    c.beginPath();
+    c.ellipse(ch.x, ch.y, 38, 9, 0, 0, 6.29);
+    c.ellipse(ch.x + 22, ch.y - 6, 24, 8, 0, 0, 6.29);
+    c.ellipse(ch.x - 20, ch.y - 4, 20, 7, 0, 0, 6.29);
+    c.fill();
+  }
+
+  /* --- warstwy parallaxy --- */
+  for (const o of g.gory) rysujGore(c, o.x, 0.8);
+  for (const o of g.pagody) rysujPagode(c, o.x, 0.75);
+  for (const o of g.torii) rysujToriiTlo(c, o.x, 0.55);
+
+  /* --- mgiełka nad ziemią --- */
+  const fg = c.createLinearGradient(0, g.ziemia - 34, 0, g.ziemia + 6);
+  fg.addColorStop(0, "rgba(158, 170, 210, 0)");
+  fg.addColorStop(1, "rgba(158, 170, 210, 0.08)");
+  c.fillStyle = fg;
+  c.fillRect(0, g.ziemia - 34, W, 40);
+
+  for (const o of g.latarnie) rysujKamiennaLatarnie(c, o.x, g.ziemia);
+
+  /* --- drewniany pomost --- */
+  const wg = c.createLinearGradient(0, g.ziemia + 6, 0, H);
+  wg.addColorStop(0, "#4a3120");
+  wg.addColorStop(0.25, "#3a2413");
+  wg.addColorStop(1, "#241609");
+  c.fillStyle = wg;
+  c.fillRect(0, g.ziemia + 6, W, H - g.ziemia - 6);
+  /* krawędź pomostu */
+  c.fillStyle = "#5c3b22";
+  c.fillRect(0, g.ziemia + 6, W, 3);
+  /* deski przesuwają się z prędkością gry */
+  c.strokeStyle = "rgba(0, 0, 0, 0.35)";
   c.lineWidth = 2;
+  const przesuw = (g.klatka * g.predkosc) % 46;
+  for (let dx = -przesuw; dx < W; dx += 46) {
+    c.beginPath();
+    c.moveTo(dx, g.ziemia + 9);
+    c.lineTo(dx - 8, H);
+    c.stroke();
+  }
+  /* złota poświata ścieżki */
+  c.strokeStyle = "rgba(217, 164, 65, 0.35)";
+  c.lineWidth = 1.5;
   c.beginPath();
   c.moveTo(0, g.ziemia + 6);
   c.lineTo(W, g.ziemia + 6);
   c.stroke();
-  c.strokeStyle = "rgba(217, 164, 65, 0.18)";
-  c.setLineDash([6, 10]);
-  c.beginPath();
-  c.moveTo(-(g.klatka * g.predkosc % 16), g.ziemia + 16);
-  c.lineTo(W, g.ziemia + 16);
-  c.stroke();
-  c.setLineDash([]);
+
+  /* --- płatki w tle (atmosfera) --- */
+  for (const p of g.tloPlatki) rysujPlatekSakury(c, p.x, p.y, p.rot, 4.5, 0.4);
+
+  /* --- kwiaty do zebrania --- */
+  for (const p of g.platki) {
+    const py = p.y + Math.sin(g.klatka / 12 + p.faza) * 6;
+    /* delikatna poświata pod kwiatem */
+    c.beginPath();
+    c.arc(p.x, py, 14, 0, 6.29);
+    c.fillStyle = "rgba(246, 200, 216, 0.12)";
+    c.fill();
+    rysujKwiatSakury(c, p.x, py, g.klatka / 30 + p.faza, 11);
+  }
+
+  /* --- lampiony-przeszkody --- */
+  for (const p of g.przeszkody) {
+    rysujChochin(c, p.x, g.ziemia, Math.sin(g.klatka / 18 + p.x / 40) * 0.09);
+  }
+
+  /* --- cząsteczki (rozbłyski) --- */
+  for (const cz of g.czastki) {
+    c.globalAlpha = Math.min(1, cz.zycie / 20);
+    c.beginPath();
+    c.arc(cz.x, cz.y, 2.2, 0, 6.29);
+    c.fillStyle = cz.kolor;
+    c.fill();
+  }
+  c.globalAlpha = 1;
 
   c.textAlign = "center";
   c.textBaseline = "alphabetic";
 
-  /* płatki */
-  c.font = "22px serif";
-  for (const p of g.platki) {
-    c.fillText("🌸", p.x, p.y + Math.sin(g.klatka / 12 + p.faza) * 6 + 8);
-  }
+  /* cień pod postacią (kurczy się w skoku) */
+  const wysokoscSkoku = g.ziemia - g.gracz.y;
+  const cienSkala = Math.max(0.35, 1 - wysokoscSkoku / 160);
+  c.beginPath();
+  c.ellipse(g.gracz.x, g.ziemia + 8, 14 * cienSkala, 3.5 * cienSkala, 0, 0, 6.29);
+  c.fillStyle = "rgba(0, 0, 0, " + (0.35 * cienSkala).toFixed(2) + ")";
+  c.fill();
 
-  /* lampiony */
-  c.font = "26px serif";
-  for (const p of g.przeszkody) {
-    c.fillText("🏮", p.x, g.ziemia + 4);
-  }
-
-  /* lisek (miga po trafieniu) */
+  /* postać (miga po trafieniu): awatar z panelu admina albo lisek */
   if (g.klatka > g.nietykalnoscDo || Math.floor(g.klatka / 5) % 2 === 0) {
-    c.font = "30px serif";
-    c.save();
-    c.translate(g.gracz.x, g.gracz.y);
-    c.scale(-1, 1); /* lisek patrzy w prawo, w kierunku biegu */
-    c.fillText("🦊", 0, 0);
-    c.restore();
+    if (awatarJest) {
+      const r = 17;
+      const cx = g.gracz.x, cy = g.gracz.y - 12;
+      const pochylenie = Math.max(-0.3, Math.min(0.3, g.gracz.vy * 0.03)); /* lekki przechył w skoku */
+      c.save();
+      c.translate(cx, cy);
+      c.rotate(pochylenie);
+      c.beginPath();
+      c.arc(0, 0, r, 0, 6.29);
+      c.closePath();
+      c.clip();
+      c.drawImage(awatarGracza, -r, -r, r * 2, r * 2);
+      c.restore();
+      c.beginPath();
+      c.arc(cx, cy, r, 0, 6.29);
+      c.strokeStyle = "#d9a441";
+      c.lineWidth = 2.5;
+      c.stroke();
+    } else {
+      c.font = "30px serif";
+      c.save();
+      c.translate(g.gracz.x, g.gracz.y);
+      c.scale(-1, 1); /* lisek patrzy w prawo, w kierunku biegu */
+      c.fillText("🦊", 0, 0);
+      c.restore();
+    }
   }
 }
 

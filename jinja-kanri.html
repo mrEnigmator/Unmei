@@ -163,7 +163,38 @@
   }
 
   .panel-zakladki { display: none; }
-  .panel-zakladki.aktywny { display: block; }
+  .panel-zakladki.aktywny { display: block; animation: wjazd 0.35s ease both; }
+
+  @keyframes wjazd {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ---------- płatki w tle ---------- */
+  .platki { position: fixed; inset: 0; overflow: hidden; pointer-events: none; z-index: 0; }
+  .kontener { position: relative; z-index: 1; }
+
+  .platek {
+    position: absolute;
+    top: -4vh;
+    width: 10px;
+    height: 10px;
+    background: linear-gradient(135deg, var(--sakura) 0%, #eba7c0 100%);
+    border-radius: 60% 0 60% 0;
+    opacity: 0.28;
+    animation: opadanie linear infinite;
+  }
+
+  @keyframes opadanie {
+    0%   { transform: translate3d(0, -4vh, 0) rotate(0deg); }
+    50%  { transform: translate3d(-24px, 52vh, 0) rotate(300deg); }
+    100% { transform: translate3d(16px, 108vh, 0) rotate(620deg); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .platek { display: none; }
+    .panel-zakladki.aktywny { animation: none; }
+  }
 
   /* ---------- przegląd: status ---------- */
   .status-duzy { text-align: center; padding: 26px 18px; }
@@ -238,6 +269,40 @@
   .droga li.zaliczony .detal { color: var(--zloto); }
 
   .zart { text-align: center; color: var(--sakura); font-size: 0.86rem; font-style: italic; margin-top: 12px; }
+
+  /* ---------- postać w grze ---------- */
+  .awatar-rzad { display: flex; gap: 18px; align-items: center; flex-wrap: wrap; }
+
+  .awatar-podglad {
+    width: 88px;
+    height: 88px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid var(--zloto);
+    box-shadow: 0 0 18px rgba(217, 164, 65, 0.35);
+    flex: 0 0 auto;
+  }
+
+  .awatar-brak {
+    width: 88px;
+    height: 88px;
+    border-radius: 50%;
+    border: 2px dashed var(--linia);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.6rem;
+    color: var(--tekst-przyg);
+    flex: 0 0 auto;
+  }
+
+  .awatar-brak span { font-size: 0.58rem; letter-spacing: 0.05em; }
+
+  .awatar-akcje { flex: 1; min-width: 200px; }
+  .awatar-akcje .rzad-przyciskow { display: flex; gap: 8px; flex-wrap: wrap; }
+  .awatar-opis { color: var(--tekst-przyg); font-size: 0.82rem; margin-bottom: 10px; }
+  .awatar-status { font-size: 0.82rem; color: var(--sakura); min-height: 1.4em; margin-top: 8px; }
 
   /* ---------- oś czasu ---------- */
   .dzien-separator {
@@ -345,6 +410,7 @@
 </style>
 </head>
 <body>
+<div class="platki" aria-hidden="true"></div>
 <div class="kontener">
 
   <!-- ---------- LOGOWANIE ---------- -->
@@ -394,6 +460,23 @@
       <div class="karta">
         <h3>Droga przez świątynię</h3>
         <ul class="droga" id="listaDrogi"></ul>
+      </div>
+
+      <div class="karta">
+        <h3>Postać w grze 🦊</h3>
+        <div class="awatar-rzad">
+          <img class="awatar-podglad" id="podgladAwatara" alt="Awatar postaci w grze" style="display:none;">
+          <div class="awatar-brak" id="awatarBrak">🦊<span>domyślny lisek</span></div>
+          <div class="awatar-akcje">
+            <p class="awatar-opis">Wgraj jej zdjęcie, a stanie się główną postacią mini-gry — będzie skakać po świątyni w złotym kółeczku. Zdjęcie jest przycinane do kwadratu i zmniejszane w przeglądarce.</p>
+            <div class="rzad-przyciskow">
+              <input type="file" id="plikAwatara" accept="image/png,image/jpeg,image/webp" hidden>
+              <button class="btn-glowny" id="btnWgrajAwatar">Wgraj zdjęcie</button>
+              <button class="btn-cichy" id="btnUsunAwatar">Przywróć liska</button>
+            </div>
+            <p class="awatar-status" id="awatarStatus" aria-live="polite"></p>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -476,6 +559,7 @@ function pokazPanel() {
   widokLogowania.style.display = "none";
   widokPanelu.style.display = "block";
   wczytajZdarzenia();
+  odswiezAwatar();
   clearInterval(timerOdswiezania);
   sekundDoOdswiezenia = CO_ILE_ODSWIEZAC_S;
   timerOdswiezania = setInterval(() => {
@@ -816,6 +900,102 @@ document.getElementById("btnEksportCsv").addEventListener("click", () => {
   const csv = [wiersz(kolumny), ...przefiltrowane().map(z => wiersz(kolumny.map(k => z[k])))].join("\r\n");
   pobierzPlik("unmei-zdarzenia.csv", "﻿" + csv, "text/csv;charset=utf-8");
 });
+
+/* ================= awatar postaci w grze ================= */
+
+const podgladAwatara = document.getElementById("podgladAwatara");
+const awatarBrak = document.getElementById("awatarBrak");
+const awatarStatus = document.getElementById("awatarStatus");
+const plikAwatara = document.getElementById("plikAwatara");
+
+async function odswiezAwatar() {
+  try {
+    const odp = await fetch("/api/awatar?t=" + Date.now());
+    if (odp.ok) {
+      const blob = await odp.blob();
+      podgladAwatara.src = URL.createObjectURL(blob);
+      podgladAwatara.style.display = "";
+      awatarBrak.style.display = "none";
+    } else {
+      podgladAwatara.style.display = "none";
+      awatarBrak.style.display = "flex";
+    }
+  } catch (e) { /* offline — zostaje jak było */ }
+}
+
+document.getElementById("btnWgrajAwatar").addEventListener("click", () => plikAwatara.click());
+
+plikAwatara.addEventListener("change", () => {
+  const plik = plikAwatara.files[0];
+  if (!plik) return;
+  awatarStatus.textContent = "przygotowuję zdjęcie…";
+
+  const czytnik = new FileReader();
+  czytnik.onload = () => {
+    const obraz = new Image();
+    obraz.onload = async () => {
+      /* przycięcie do kwadratu (środek) i zmniejszenie do 128 px */
+      const bok = Math.min(obraz.width, obraz.height);
+      const sx = (obraz.width - bok) / 2;
+      const sy = (obraz.height - bok) / 2;
+      const kanwa = document.createElement("canvas");
+      kanwa.width = kanwa.height = 128;
+      kanwa.getContext("2d").drawImage(obraz, sx, sy, bok, bok, 0, 0, 128, 128);
+      const dataUrl = kanwa.toDataURL("image/jpeg", 0.88);
+
+      try {
+        const odp = await fetch("/api/admin/awatar", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer " + sessionStorage.getItem(KLUCZ_TOKENU)
+          },
+          body: JSON.stringify({ dataUrl })
+        });
+        if (odp.status === 401) { wyloguj(); return; }
+        const dane = await odp.json();
+        awatarStatus.textContent = dane.ok
+          ? "Gotowe! Od teraz to ona skacze po świątyni. 🌸"
+          : "Nie udało się: " + (dane.blad || "?");
+        if (dane.ok) odswiezAwatar();
+      } catch (e) {
+        awatarStatus.textContent = "Błąd połączenia przy wysyłce.";
+      }
+    };
+    obraz.onerror = () => { awatarStatus.textContent = "To nie wygląda na obrazek."; };
+    obraz.src = czytnik.result;
+  };
+  czytnik.readAsDataURL(plik);
+  plikAwatara.value = "";
+});
+
+document.getElementById("btnUsunAwatar").addEventListener("click", async () => {
+  try {
+    const odp = await fetch("/api/admin/awatar", {
+      method: "DELETE",
+      headers: { "Authorization": "Bearer " + sessionStorage.getItem(KLUCZ_TOKENU) }
+    });
+    if (odp.status === 401) { wyloguj(); return; }
+    const dane = await odp.json();
+    awatarStatus.textContent = dane.ok ? "Lisek wraca do gry. 🦊" : "Nie udało się usunąć.";
+    if (dane.ok) odswiezAwatar();
+  } catch (e) {
+    awatarStatus.textContent = "Błąd połączenia.";
+  }
+});
+
+/* ================= płatki w tle ================= */
+if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+  const kontenerPlatkow = document.querySelector(".platki");
+  for (let i = 0; i < 12; i++) {
+    const p = document.createElement("div");
+    p.className = "platek";
+    p.style.left = Math.random() * 100 + "vw";
+    p.style.animationDuration = (10 + Math.random() * 10) + "s";
+    p.style.animationDelay = (Math.random() * -20) + "s";
+    kontenerPlatkow.appendChild(p);
+  }
+}
 
 /* automatyczne wejście, jeśli token już jest w sessionStorage */
 if (sessionStorage.getItem(KLUCZ_TOKENU)) pokazPanel();

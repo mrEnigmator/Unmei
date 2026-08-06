@@ -21,6 +21,7 @@ const PORT = Number(process.env.PORT) || 3000;
 const ADMIN_HASLO = process.env.ADMIN_HASLO || "";
 const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, "dane");
 const PLIK_ZDARZEN = path.join(DATA_DIR, "zdarzenia.ndjson");
+const PLIK_AWATARA = path.join(DATA_DIR, "awatar.json");
 const WAZNOSC_TOKENU_MS = 24 * 60 * 60 * 1000;
 
 fs.mkdirSync(DATA_DIR, { recursive: true });
@@ -152,6 +153,50 @@ async function apiZdarzenia(req, res) {
   json(res, { ok: true, zdarzenia });
 }
 
+/* ---------- awatar postaci w grze ---------- */
+
+function zautoryzowany(req) {
+  const naglowek = req.headers["authorization"] || "";
+  const token = naglowek.replace(/^Bearer\s+/i, "");
+  return ADMIN_HASLO && tokenWazny(token);
+}
+
+async function apiAwatarZapisz(req, res) {
+  if (!zautoryzowany(req)) return json(res, { ok: false, blad: "Brak autoryzacji" }, 401);
+
+  let dane;
+  try {
+    dane = JSON.parse(await wczytajCialo(req, 800 * 1024));
+  } catch (e) {
+    return json(res, { ok: false, blad: "Nieprawidłowe dane" }, 400);
+  }
+
+  const dopasowanie = /^data:image\/(png|jpeg|webp);base64,([A-Za-z0-9+/=]+)$/.exec(dane?.dataUrl || "");
+  if (!dopasowanie) return json(res, { ok: false, blad: "Oczekiwano obrazka PNG/JPEG/WebP" }, 400);
+  if (dopasowanie[2].length > 700 * 1024) return json(res, { ok: false, blad: "Obrazek za duży" }, 400);
+
+  await fsp.writeFile(PLIK_AWATARA, JSON.stringify({ mime: "image/" + dopasowanie[1], b64: dopasowanie[2] }), "utf8");
+  json(res, { ok: true });
+}
+
+async function apiAwatarUsun(req, res) {
+  if (!zautoryzowany(req)) return json(res, { ok: false, blad: "Brak autoryzacji" }, 401);
+  try { await fsp.unlink(PLIK_AWATARA); } catch (e) { if (e.code !== "ENOENT") throw e; }
+  json(res, { ok: true });
+}
+
+async function apiAwatarPubliczny(res) {
+  let zapis;
+  try {
+    zapis = JSON.parse(await fsp.readFile(PLIK_AWATARA, "utf8"));
+  } catch (e) {
+    return json(res, { ok: false, blad: "Brak awatara" }, 404);
+  }
+  const bajty = Buffer.from(zapis.b64, "base64");
+  res.writeHead(200, { "Content-Type": zapis.mime, "Cache-Control": "no-cache", "Content-Length": bajty.length });
+  res.end(bajty);
+}
+
 /* ---------- pliki statyczne ---------- */
 
 const STATYCZNE = {
@@ -177,6 +222,9 @@ const serwer = http.createServer(async (req, res) => {
     if (sciezka === "/api/odpowiedz" && req.method === "POST") return await apiOdpowiedz(req, res);
     if (sciezka === "/api/admin/login" && req.method === "POST") return await apiLogin(req, res);
     if (sciezka === "/api/admin/zdarzenia" && req.method === "GET") return await apiZdarzenia(req, res);
+    if (sciezka === "/api/awatar" && req.method === "GET") return await apiAwatarPubliczny(res);
+    if (sciezka === "/api/admin/awatar" && req.method === "POST") return await apiAwatarZapisz(req, res);
+    if (sciezka === "/api/admin/awatar" && req.method === "DELETE") return await apiAwatarUsun(req, res);
 
     const wpis = STATYCZNE[sciezka];
     if (wpis && (req.method === "GET" || req.method === "HEAD")) return await serwujStatyczny(res, wpis);
