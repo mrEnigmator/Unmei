@@ -299,10 +299,56 @@
 
   .awatar-brak span { font-size: 0.58rem; letter-spacing: 0.05em; }
 
-  .awatar-akcje { flex: 1; min-width: 200px; }
-  .awatar-akcje .rzad-przyciskow { display: flex; gap: 8px; flex-wrap: wrap; }
-  .awatar-opis { color: var(--tekst-przyg); font-size: 0.82rem; margin-bottom: 10px; }
+  .awatar-opis { color: var(--tekst-przyg); font-size: 0.82rem; margin-bottom: 14px; }
   .awatar-status { font-size: 0.82rem; color: var(--sakura); min-height: 1.4em; margin-top: 8px; }
+
+  .gosc-wiersz {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px dashed var(--linia);
+  }
+
+  .gosc-wiersz:last-child { border-bottom: none; }
+
+  .gosc-miniatura {
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid var(--zloto);
+    flex: 0 0 auto;
+  }
+
+  .gosc-miniatura-brak {
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    border: 2px dashed var(--linia);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.15rem;
+    flex: 0 0 auto;
+  }
+
+  .gosc-dane { flex: 1; min-width: 0; }
+  .gosc-dane .imie { font-weight: 700; color: var(--papier); }
+  .gosc-dane .klucz {
+    font-family: ui-monospace, Menlo, monospace;
+    font-size: 0.8rem;
+    color: var(--zloto);
+    background: rgba(217, 164, 65, 0.1);
+    padding: 1px 8px;
+    border-radius: 6px;
+  }
+
+  .gosc-akcje { display: flex; gap: 6px; flex: 0 0 auto; }
+  .gosc-akcje button { padding: 7px 10px; font-size: 0.85rem; }
+
+  .gosc-form { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+  .gosc-form input { flex: 1; min-width: 140px; }
 
   /* ---------- oś czasu ---------- */
   .dzien-separator {
@@ -463,20 +509,19 @@
       </div>
 
       <div class="karta">
-        <h3>Postać w grze 🦊</h3>
-        <div class="awatar-rzad">
-          <img class="awatar-podglad" id="podgladAwatara" alt="Awatar postaci w grze" style="display:none;">
-          <div class="awatar-brak" id="awatarBrak">🦊<span>domyślny lisek</span></div>
-          <div class="awatar-akcje">
-            <p class="awatar-opis">Wgraj jej zdjęcie, a stanie się główną postacią mini-gry — będzie skakać po świątyni w złotym kółeczku. Zdjęcie jest przycinane do kwadratu i zmniejszane w przeglądarce.</p>
-            <div class="rzad-przyciskow">
-              <input type="file" id="plikAwatara" accept="image/png,image/jpeg,image/webp" hidden>
-              <button class="btn-glowny" id="btnWgrajAwatar">Wgraj zdjęcie</button>
-              <button class="btn-cichy" id="btnUsunAwatar">Przywróć liska</button>
-            </div>
-            <p class="awatar-status" id="awatarStatus" aria-live="polite"></p>
-          </div>
-        </div>
+        <h3>Goście i słowa-klucze 🗝️</h3>
+        <p class="awatar-opis">Każda osoba dostaje własne słowo-klucz do bramy świątyni i własne zdjęcie jako postać w grze. Gdy dodasz choć jednego gościa, strona zapyta o słowo-klucz przy wejściu. Zdarzenia w logach są podpisane imieniem gościa.</p>
+
+        <div id="listaGosci"></div>
+
+        <form id="formGosc" class="gosc-form">
+          <input type="text" id="poleImienia" placeholder="imię, np. Kasia" maxlength="40" required>
+          <input type="text" id="poleKlucza" placeholder="słowo-klucz, np. sakura" maxlength="60" autocomplete="off" required>
+          <button type="submit" class="btn-glowny">Dodaj gościa</button>
+        </form>
+
+        <input type="file" id="plikAwatara" accept="image/png,image/jpeg,image/webp" hidden>
+        <p class="awatar-status" id="goscStatus" aria-live="polite"></p>
       </div>
     </div>
 
@@ -559,7 +604,7 @@ function pokazPanel() {
   widokLogowania.style.display = "none";
   widokPanelu.style.display = "block";
   wczytajZdarzenia();
-  odswiezAwatar();
+  odswiezGosci();
   clearInterval(timerOdswiezania);
   sekundDoOdswiezenia = CO_ILE_ODSWIEZAC_S;
   timerOdswiezania = setInterval(() => {
@@ -683,7 +728,14 @@ function kategoriaZdarzenia(z) {
 }
 
 function opisZdarzenia(z) {
+  const kto = z.gosc ? "「" + z.gosc + "」 " : "";
+  const wynik = opisZdarzeniaBez(z);
+  return { ikona: wynik.ikona, tekst: kto + wynik.tekst };
+}
+
+function opisZdarzeniaBez(z) {
   if (z.typ === "wizyta") return { ikona: "👣", tekst: "Wejście na stronę" };
+  if (z.etap === "brama") return { ikona: "🗝️", tekst: "Rozproszyła barierę — podała słowo-klucz" };
   if (z.typ === "final") {
     let t = "WYBRAŁA: " + (z.ema || "?") + ", " + (z.dataSlownie || z.data || "?");
     if (z.pora) t += ", " + z.pora;
@@ -733,13 +785,20 @@ function renderujPrzeglad() {
   const kartaStatus = document.getElementById("kartaStatus");
 
   if (finaly.length > 0) {
-    const f = finaly[0];
+    /* najnowszy finał każdej osoby osobno (zdarzenia są od najnowszych) */
+    const wgOsoby = new Map();
+    for (const f of finaly) {
+      const klucz = f.goscId || f.gosc || "anonim";
+      if (!wgOsoby.has(klucz)) wgOsoby.set(klucz, f);
+    }
+    const wiersze = [...wgOsoby.values()].map(f =>
+      '<div class="szczegoly">' + (f.gosc ? "「" + esc(f.gosc) + "」 · " : "") + esc(f.ema || "?") + " · " + esc(f.dataSlownie || f.data || "?") +
+      (f.pora ? " · " + esc(f.pora) : "") +
+      '<div class="kiedy">kliknęła ' + czasWzgledny(f.timestamp) + " (" + czasAbsolutny(f.timestamp) + ")</div></div>"
+    ).join("");
     kartaStatus.innerHTML =
       '<div class="etykieta">Czy już wybrała?</div>' +
-      '<div class="wynik tak">TAK! 大吉 🎉</div>' +
-      '<div class="szczegoly">' + esc(f.ema || "?") + " · " + esc(f.dataSlownie || f.data || "?") +
-      (f.pora ? " · " + esc(f.pora) : "") + "</div>" +
-      '<div class="kiedy">kliknęła ' + czasWzgledny(f.timestamp) + " (" + czasAbsolutny(f.timestamp) + ")</div>";
+      '<div class="wynik tak">TAK! 大吉 🎉</div>' + wiersze;
   } else {
     const ostatnie = zdarzenia[0];
     kartaStatus.innerHTML =
@@ -901,34 +960,107 @@ document.getElementById("btnEksportCsv").addEventListener("click", () => {
   pobierzPlik("unmei-zdarzenia.csv", "﻿" + csv, "text/csv;charset=utf-8");
 });
 
-/* ================= awatar postaci w grze ================= */
+/* ================= goście i słowa-klucze ================= */
 
-const podgladAwatara = document.getElementById("podgladAwatara");
-const awatarBrak = document.getElementById("awatarBrak");
-const awatarStatus = document.getElementById("awatarStatus");
+const listaGosci = document.getElementById("listaGosci");
+const goscStatus = document.getElementById("goscStatus");
 const plikAwatara = document.getElementById("plikAwatara");
+let awatarDlaGoscia = null; /* id gościa, dla którego wgrywamy zdjęcie */
 
-async function odswiezAwatar() {
-  try {
-    const odp = await fetch("/api/awatar?t=" + Date.now());
-    if (odp.ok) {
-      const blob = await odp.blob();
-      podgladAwatara.src = URL.createObjectURL(blob);
-      podgladAwatara.style.display = "";
-      awatarBrak.style.display = "none";
-    } else {
-      podgladAwatara.style.display = "none";
-      awatarBrak.style.display = "flex";
-    }
-  } catch (e) { /* offline — zostaje jak było */ }
+function naglowkiAdmina() {
+  return {
+    "Content-Type": "application/json",
+    "Authorization": "Bearer " + sessionStorage.getItem(KLUCZ_TOKENU)
+  };
 }
 
-document.getElementById("btnWgrajAwatar").addEventListener("click", () => plikAwatara.click());
+async function odswiezGosci() {
+  try {
+    const odp = await fetch("/api/admin/goscie", { headers: naglowkiAdmina() });
+    if (odp.status === 401) { wyloguj(); return; }
+    const dane = await odp.json();
+    if (!dane.ok) return;
+
+    if (dane.goscie.length === 0) {
+      listaGosci.innerHTML = '<p class="puste">Brak gości — strona jest otwarta dla każdego (i gra liskiem 🦊). Dodaj gościa, żeby włączyć barierę z hasłem.</p>';
+      return;
+    }
+
+    listaGosci.innerHTML = dane.goscie.map(g =>
+      '<div class="gosc-wiersz">' +
+      (g.maAwatar
+        ? '<img class="gosc-miniatura" src="/api/awatar?gosc=' + encodeURIComponent(g.id) + '&t=' + Date.now() + '" alt="">'
+        : '<div class="gosc-miniatura-brak">🦊</div>') +
+      '<div class="gosc-dane"><span class="imie">' + esc(g.imie) + '</span> ' +
+      '<span class="klucz">🗝️ ' + esc(g.haslo) + '</span></div>' +
+      '<div class="gosc-akcje">' +
+      '<button class="btn-cichy" data-akcja="zdjecie" data-id="' + g.id + '" title="Wgraj zdjęcie do gry">📷</button>' +
+      (g.maAwatar ? '<button class="btn-cichy" data-akcja="usun-zdjecie" data-id="' + g.id + '" title="Przywróć liska">🦊</button>' : '') +
+      '<button class="btn-cichy" data-akcja="usun" data-id="' + g.id + '" data-imie="' + esc(g.imie) + '" title="Usuń gościa">🗑</button>' +
+      '</div></div>'
+    ).join("");
+  } catch (e) { /* offline */ }
+}
+
+listaGosci.addEventListener("click", async (e) => {
+  const btn = e.target.closest("button[data-akcja]");
+  if (!btn) return;
+  const id = btn.dataset.id;
+
+  if (btn.dataset.akcja === "zdjecie") {
+    awatarDlaGoscia = id;
+    plikAwatara.click();
+    return;
+  }
+
+  if (btn.dataset.akcja === "usun-zdjecie") {
+    const odp = await fetch("/api/admin/awatar?gosc=" + encodeURIComponent(id), { method: "DELETE", headers: naglowkiAdmina() });
+    if (odp.status === 401) { wyloguj(); return; }
+    goscStatus.textContent = "Lisek wraca do gry. 🦊";
+    odswiezGosci();
+    return;
+  }
+
+  if (btn.dataset.akcja === "usun") {
+    if (!confirm("Usunąć gościa „" + btn.dataset.imie + "”? Jej słowo-klucz przestanie działać.")) return;
+    const odp = await fetch("/api/admin/goscie?id=" + encodeURIComponent(id), { method: "DELETE", headers: naglowkiAdmina() });
+    if (odp.status === 401) { wyloguj(); return; }
+    goscStatus.textContent = "Gość usunięty.";
+    odswiezGosci();
+  }
+});
+
+document.getElementById("formGosc").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const imie = document.getElementById("poleImienia").value.trim();
+  const haslo = document.getElementById("poleKlucza").value.trim();
+  if (!imie || !haslo) return;
+
+  try {
+    const odp = await fetch("/api/admin/goscie", {
+      method: "POST",
+      headers: naglowkiAdmina(),
+      body: JSON.stringify({ imie, haslo })
+    });
+    if (odp.status === 401) { wyloguj(); return; }
+    const dane = await odp.json();
+    if (dane.ok) {
+      goscStatus.textContent = "Dodano: " + imie + " (słowo-klucz: " + haslo + "). Teraz wgraj jej zdjęcie przyciskiem 📷.";
+      document.getElementById("poleImienia").value = "";
+      document.getElementById("poleKlucza").value = "";
+      odswiezGosci();
+    } else {
+      goscStatus.textContent = "Nie udało się: " + (dane.blad || "?");
+    }
+  } catch (err) {
+    goscStatus.textContent = "Błąd połączenia.";
+  }
+});
 
 plikAwatara.addEventListener("change", () => {
   const plik = plikAwatara.files[0];
-  if (!plik) return;
-  awatarStatus.textContent = "przygotowuję zdjęcie…";
+  if (!plik || !awatarDlaGoscia) return;
+  goscStatus.textContent = "przygotowuję zdjęcie…";
 
   const czytnik = new FileReader();
   czytnik.onload = () => {
@@ -944,44 +1076,26 @@ plikAwatara.addEventListener("change", () => {
       const dataUrl = kanwa.toDataURL("image/jpeg", 0.88);
 
       try {
-        const odp = await fetch("/api/admin/awatar", {
+        const odp = await fetch("/api/admin/awatar?gosc=" + encodeURIComponent(awatarDlaGoscia), {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": "Bearer " + sessionStorage.getItem(KLUCZ_TOKENU)
-          },
+          headers: naglowkiAdmina(),
           body: JSON.stringify({ dataUrl })
         });
         if (odp.status === 401) { wyloguj(); return; }
         const dane = await odp.json();
-        awatarStatus.textContent = dane.ok
+        goscStatus.textContent = dane.ok
           ? "Gotowe! Od teraz to ona skacze po świątyni. 🌸"
           : "Nie udało się: " + (dane.blad || "?");
-        if (dane.ok) odswiezAwatar();
+        if (dane.ok) odswiezGosci();
       } catch (e) {
-        awatarStatus.textContent = "Błąd połączenia przy wysyłce.";
+        goscStatus.textContent = "Błąd połączenia przy wysyłce.";
       }
     };
-    obraz.onerror = () => { awatarStatus.textContent = "To nie wygląda na obrazek."; };
+    obraz.onerror = () => { goscStatus.textContent = "To nie wygląda na obrazek."; };
     obraz.src = czytnik.result;
   };
   czytnik.readAsDataURL(plik);
   plikAwatara.value = "";
-});
-
-document.getElementById("btnUsunAwatar").addEventListener("click", async () => {
-  try {
-    const odp = await fetch("/api/admin/awatar", {
-      method: "DELETE",
-      headers: { "Authorization": "Bearer " + sessionStorage.getItem(KLUCZ_TOKENU) }
-    });
-    if (odp.status === 401) { wyloguj(); return; }
-    const dane = await odp.json();
-    awatarStatus.textContent = dane.ok ? "Lisek wraca do gry. 🦊" : "Nie udało się usunąć.";
-    if (dane.ok) odswiezAwatar();
-  } catch (e) {
-    awatarStatus.textContent = "Błąd połączenia.";
-  }
 });
 
 /* ================= płatki w tle ================= */

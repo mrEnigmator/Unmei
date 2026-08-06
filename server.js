@@ -21,7 +21,7 @@ const PORT = Number(process.env.PORT) || 3000;
 const ADMIN_HASLO = process.env.ADMIN_HASLO || "";
 const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, "dane");
 const PLIK_ZDARZEN = path.join(DATA_DIR, "zdarzenia.ndjson");
-const PLIK_AWATARA = path.join(DATA_DIR, "awatar.json");
+const PLIK_GOSCI = path.join(DATA_DIR, "goscie.json");
 const WAZNOSC_TOKENU_MS = 24 * 60 * 60 * 1000;
 
 fs.mkdirSync(DATA_DIR, { recursive: true });
@@ -92,6 +92,8 @@ async function apiOdpowiedz(req, res) {
     dataSlownie: dane.dataSlownie ?? null,
     pora: dane.pora ?? null,
     probyOdmowy: dane.probyOdmowy ?? null,
+    gosc: dane.gosc ?? null,
+    goscId: dane.goscId ?? null,
     czasGrySekundy: dane.czasGrySekundy ?? null,
     trafieniaWLampiony: dane.trafieniaWLampiony ?? null,
     pominieta: dane.pominieta ?? null,
@@ -153,7 +155,7 @@ async function apiZdarzenia(req, res) {
   json(res, { ok: true, zdarzenia });
 }
 
-/* ---------- awatar postaci w grze ---------- */
+/* ---------- goście: profile z hasłem-kluczem i awatarem ---------- */
 
 function zautoryzowany(req) {
   const naglowek = req.headers["authorization"] || "";
@@ -161,7 +163,106 @@ function zautoryzowany(req) {
   return ADMIN_HASLO && tokenWazny(token);
 }
 
-async function apiAwatarZapisz(req, res) {
+async function wczytajGosci() {
+  try {
+    return JSON.parse(await fsp.readFile(PLIK_GOSCI, "utf8"));
+  } catch (e) {
+    if (e.code !== "ENOENT") throw e;
+    return [];
+  }
+}
+
+async function zapiszGosci(goscie) {
+  await fsp.writeFile(PLIK_GOSCI, JSON.stringify(goscie), "utf8");
+}
+
+/* --- publiczne: brama --- */
+
+async function apiBramaStatus(res) {
+  const goscie = await wczytajGosci();
+  json(res, { ok: true, wymagane: goscie.length > 0 });
+}
+
+async function apiBramaOtworz(req, res) {
+  const goscie = await wczytajGosci();
+  if (goscie.length === 0) return json(res, { ok: true, gosc: null }); /* brama wyłączona */
+
+  let dane;
+  try {
+    dane = JSON.parse(await wczytajCialo(req));
+  } catch (e) {
+    return json(res, { ok: false, blad: "Nieprawidłowe dane" }, 400);
+  }
+
+  const haslo = String(dane?.haslo || "").trim().toLowerCase();
+  for (const g of goscie) {
+    if (bezpiecznePorownanie(haslo, String(g.haslo).trim().toLowerCase())) {
+      return json(res, { ok: true, gosc: { id: g.id, imie: g.imie } });
+    }
+  }
+  json(res, { ok: false, blad: "Duchy nie znają tego słowa" }, 401);
+}
+
+/* --- publiczne: awatar gościa do gry --- */
+
+async function apiAwatarPubliczny(url, res) {
+  const id = url.searchParams.get("gosc") || "";
+  const goscie = await wczytajGosci();
+  const gosc = goscie.find(g => g.id === id);
+  if (!gosc || !gosc.awatar) return json(res, { ok: false, blad: "Brak awatara" }, 404);
+
+  const bajty = Buffer.from(gosc.awatar.b64, "base64");
+  res.writeHead(200, { "Content-Type": gosc.awatar.mime, "Cache-Control": "no-cache", "Content-Length": bajty.length });
+  res.end(bajty);
+}
+
+/* --- admin: zarządzanie gośćmi --- */
+
+async function apiGoscieLista(req, res) {
+  if (!zautoryzowany(req)) return json(res, { ok: false, blad: "Brak autoryzacji" }, 401);
+  const goscie = await wczytajGosci();
+  json(res, {
+    ok: true,
+    goscie: goscie.map(g => ({ id: g.id, imie: g.imie, haslo: g.haslo, maAwatar: !!g.awatar, utworzono: g.utworzono }))
+  });
+}
+
+async function apiGoscDodaj(req, res) {
+  if (!zautoryzowany(req)) return json(res, { ok: false, blad: "Brak autoryzacji" }, 401);
+
+  let dane;
+  try {
+    dane = JSON.parse(await wczytajCialo(req));
+  } catch (e) {
+    return json(res, { ok: false, blad: "Nieprawidłowe dane" }, 400);
+  }
+
+  const imie = String(dane?.imie || "").trim().slice(0, 40);
+  const haslo = String(dane?.haslo || "").trim().slice(0, 60);
+  if (!imie || !haslo) return json(res, { ok: false, blad: "Podaj imię i słowo-klucz" }, 400);
+
+  const goscie = await wczytajGosci();
+  if (goscie.some(g => String(g.haslo).trim().toLowerCase() === haslo.toLowerCase())) {
+    return json(res, { ok: false, blad: "To słowo-klucz jest już zajęte" }, 400);
+  }
+
+  const gosc = { id: crypto.randomUUID().slice(0, 8), imie, haslo, awatar: null, utworzono: new Date().toISOString() };
+  goscie.push(gosc);
+  await zapiszGosci(goscie);
+  json(res, { ok: true, gosc: { id: gosc.id, imie: gosc.imie } });
+}
+
+async function apiGoscUsun(req, res, url) {
+  if (!zautoryzowany(req)) return json(res, { ok: false, blad: "Brak autoryzacji" }, 401);
+  const id = url.searchParams.get("id") || "";
+  const goscie = await wczytajGosci();
+  const po = goscie.filter(g => g.id !== id);
+  if (po.length === goscie.length) return json(res, { ok: false, blad: "Nie ma takiego gościa" }, 404);
+  await zapiszGosci(po);
+  json(res, { ok: true });
+}
+
+async function apiAwatarZapisz(req, res, url) {
   if (!zautoryzowany(req)) return json(res, { ok: false, blad: "Brak autoryzacji" }, 401);
 
   let dane;
@@ -175,26 +276,25 @@ async function apiAwatarZapisz(req, res) {
   if (!dopasowanie) return json(res, { ok: false, blad: "Oczekiwano obrazka PNG/JPEG/WebP" }, 400);
   if (dopasowanie[2].length > 700 * 1024) return json(res, { ok: false, blad: "Obrazek za duży" }, 400);
 
-  await fsp.writeFile(PLIK_AWATARA, JSON.stringify({ mime: "image/" + dopasowanie[1], b64: dopasowanie[2] }), "utf8");
+  const id = url.searchParams.get("gosc") || "";
+  const goscie = await wczytajGosci();
+  const gosc = goscie.find(g => g.id === id);
+  if (!gosc) return json(res, { ok: false, blad: "Nie ma takiego gościa" }, 404);
+
+  gosc.awatar = { mime: "image/" + dopasowanie[1], b64: dopasowanie[2] };
+  await zapiszGosci(goscie);
   json(res, { ok: true });
 }
 
-async function apiAwatarUsun(req, res) {
+async function apiAwatarUsun(req, res, url) {
   if (!zautoryzowany(req)) return json(res, { ok: false, blad: "Brak autoryzacji" }, 401);
-  try { await fsp.unlink(PLIK_AWATARA); } catch (e) { if (e.code !== "ENOENT") throw e; }
+  const id = url.searchParams.get("gosc") || "";
+  const goscie = await wczytajGosci();
+  const gosc = goscie.find(g => g.id === id);
+  if (!gosc) return json(res, { ok: false, blad: "Nie ma takiego gościa" }, 404);
+  gosc.awatar = null;
+  await zapiszGosci(goscie);
   json(res, { ok: true });
-}
-
-async function apiAwatarPubliczny(res) {
-  let zapis;
-  try {
-    zapis = JSON.parse(await fsp.readFile(PLIK_AWATARA, "utf8"));
-  } catch (e) {
-    return json(res, { ok: false, blad: "Brak awatara" }, 404);
-  }
-  const bajty = Buffer.from(zapis.b64, "base64");
-  res.writeHead(200, { "Content-Type": zapis.mime, "Cache-Control": "no-cache", "Content-Length": bajty.length });
-  res.end(bajty);
 }
 
 /* ---------- pliki statyczne ---------- */
@@ -222,9 +322,14 @@ const serwer = http.createServer(async (req, res) => {
     if (sciezka === "/api/odpowiedz" && req.method === "POST") return await apiOdpowiedz(req, res);
     if (sciezka === "/api/admin/login" && req.method === "POST") return await apiLogin(req, res);
     if (sciezka === "/api/admin/zdarzenia" && req.method === "GET") return await apiZdarzenia(req, res);
-    if (sciezka === "/api/awatar" && req.method === "GET") return await apiAwatarPubliczny(res);
-    if (sciezka === "/api/admin/awatar" && req.method === "POST") return await apiAwatarZapisz(req, res);
-    if (sciezka === "/api/admin/awatar" && req.method === "DELETE") return await apiAwatarUsun(req, res);
+    if (sciezka === "/api/brama" && req.method === "GET") return await apiBramaStatus(res);
+    if (sciezka === "/api/brama" && req.method === "POST") return await apiBramaOtworz(req, res);
+    if (sciezka === "/api/awatar" && req.method === "GET") return await apiAwatarPubliczny(url, res);
+    if (sciezka === "/api/admin/goscie" && req.method === "GET") return await apiGoscieLista(req, res);
+    if (sciezka === "/api/admin/goscie" && req.method === "POST") return await apiGoscDodaj(req, res);
+    if (sciezka === "/api/admin/goscie" && req.method === "DELETE") return await apiGoscUsun(req, res, url);
+    if (sciezka === "/api/admin/awatar" && req.method === "POST") return await apiAwatarZapisz(req, res, url);
+    if (sciezka === "/api/admin/awatar" && req.method === "DELETE") return await apiAwatarUsun(req, res, url);
 
     const wpis = STATYCZNE[sciezka];
     if (wpis && (req.method === "GET" || req.method === "HEAD")) return await serwujStatyczny(res, wpis);

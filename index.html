@@ -201,6 +201,53 @@
   .btn-muzyka.widoczny { display: flex; }
   .btn-muzyka:hover { border-color: var(--zloto); }
 
+  /* ================= ETAP 0: BARIERA (hasło gościa) ================= */
+  .bariera-karta {
+    margin-top: 36px;
+    background: rgba(16, 19, 31, 0.6);
+    border: 1px solid rgba(217, 164, 65, 0.3);
+    border-radius: 16px;
+    padding: 30px 24px;
+    width: min(360px, 92vw);
+    backdrop-filter: blur(4px);
+  }
+
+  .bariera-karta input {
+    width: 100%;
+    margin: 18px 0 14px;
+    padding: 14px 16px;
+    font-family: inherit;
+    font-size: 1.05rem;
+    text-align: center;
+    letter-spacing: 0.08em;
+    background: rgba(245, 239, 226, 0.06);
+    border: 1px solid rgba(233, 228, 216, 0.3);
+    border-radius: 10px;
+    color: var(--tekst);
+  }
+
+  .bariera-karta input:focus-visible {
+    outline: 3px solid var(--zloto);
+    outline-offset: 2px;
+  }
+
+  .bariera-blad {
+    min-height: 1.6em;
+    color: var(--sakura);
+    font-size: 0.9rem;
+    margin-top: 10px;
+    font-style: italic;
+  }
+
+  .bariera-karta.trzesie { animation: bariera-nie 0.4s ease; }
+
+  @keyframes bariera-nie {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-9px); }
+    50% { transform: translateX(8px); }
+    75% { transform: translateX(-5px); }
+  }
+
   /* ================= ETAP 1: TORII ================= */
   .torii-svg {
     margin-top: 36px;
@@ -747,6 +794,21 @@
 
 <main>
 
+  <!-- ============ ETAP 0: BARIERA ŚWIĄTYNI ============ -->
+  <section class="etap" id="etap0" aria-label="Bariera świątyni — słowo-klucz">
+    <div class="kanji-naglowek" style="font-size:2.1rem;">結界</div>
+    <div class="romaji">kek-kai</div>
+    <h1 style="font-size:1.4rem;">Bariera świątyni</h1>
+    <p class="podtytul">To miejsce jest chronione. Wejść może tylko osoba, która zna słowo-klucz z zaproszenia.</p>
+
+    <form class="bariera-karta" id="formBariery">
+      <label for="poleKlucza" style="color:var(--zloto); font-size:0.9rem; letter-spacing:0.08em;">🗝️ słowo-klucz</label>
+      <input type="text" id="poleKlucza" autocomplete="off" autocapitalize="off" required>
+      <button type="submit" class="btn-glowny" style="width:100%;">Rozprosz barierę ⛩️</button>
+      <p class="bariera-blad" id="bladBariery" aria-live="polite"></p>
+    </form>
+  </section>
+
   <!-- ============ ETAP 1: BRAMA TORII ============ -->
   <section class="etap aktywny" id="etap1" aria-label="Brama torii">
     <div class="kanji-naglowek">運命</div>
@@ -904,6 +966,9 @@ const TWOJE_IMIE = "Paweł";
 const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 /* ---------- wysyłanie zdarzeń (błędy ignorowane po cichu) ---------- */
+let goscInfo = null; /* {id, imie} po przejściu bariery */
+try { goscInfo = JSON.parse(sessionStorage.getItem("gosc") || "null"); } catch (e) {}
+
 function wyslijZdarzenie(dane) {
   try {
     fetch("/api/odpowiedz", {
@@ -911,6 +976,8 @@ function wyslijZdarzenie(dane) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         ...dane,
+        gosc: goscInfo ? goscInfo.imie : null,
+        goscId: goscInfo ? goscInfo.id : null,
         timestamp: new Date().toISOString(),
         userAgent: navigator.userAgent
       })
@@ -919,6 +986,54 @@ function wyslijZdarzenie(dane) {
 }
 
 wyslijZdarzenie({ typ: "wizyta" });
+
+/* ---------- bariera świątyni (słowo-klucz gościa) ---------- */
+const formBariery = document.getElementById("formBariery");
+const bladBariery = document.getElementById("bladBariery");
+
+async function initBariera() {
+  if (goscInfo) { zaladujAwatarGoscia(); return; } /* już przeszła barierę w tej sesji */
+  try {
+    const odp = await fetch("/api/brama");
+    const dane = await odp.json();
+    if (dane.wymagane) {
+      document.querySelectorAll(".etap").forEach(s => s.classList.remove("aktywny"));
+      document.getElementById("etap0").classList.add("aktywny");
+    }
+  } catch (e) { /* brak backendu (podgląd z dysku) — bez bariery */ }
+}
+
+formBariery.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  bladBariery.textContent = "";
+  const haslo = document.getElementById("poleKlucza").value;
+
+  try {
+    const odp = await fetch("/api/brama", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ haslo })
+    });
+    const dane = await odp.json();
+
+    if (dane.ok) {
+      goscInfo = dane.gosc || null;
+      try { sessionStorage.setItem("gosc", JSON.stringify(goscInfo)); } catch (err) {}
+      zaladujAwatarGoscia();
+      wyslijZdarzenie({ typ: "etap", etap: "brama" });
+      document.getElementById("etap0").classList.remove("aktywny");
+      document.getElementById("etap1").classList.add("aktywny");
+    } else {
+      bladBariery.textContent = "Duchy nie znają tego słowa… spróbuj jeszcze raz. 🌸";
+      const karta = formBariery;
+      karta.classList.remove("trzesie");
+      void karta.offsetWidth;
+      karta.classList.add("trzesie");
+    }
+  } catch (err) {
+    bladBariery.textContent = "Bariera milczy — sprawdź połączenie.";
+  }
+});
 
 /* ---------- muzyka w tle (YouTube, samo audio) ---------- */
 const MUZYKA_VIDEO_ID = "kdYWYNsOGH0";
@@ -1104,11 +1219,18 @@ const btnPominGre = document.getElementById("btnPominGre");
 
 let gra = null; /* stan bieżącej rozgrywki */
 
-/* awatar postaci wgrany w panelu admina (opcjonalny — bez niego gra liskiem) */
+/* awatar gościa wgrany w panelu admina (opcjonalny — bez niego gra liskiem) */
 const awatarGracza = new Image();
 let awatarJest = false;
 awatarGracza.onload = () => { awatarJest = true; };
-try { awatarGracza.src = "/api/awatar?t=" + Date.now(); } catch (e) { /* podgląd z dysku */ }
+
+function zaladujAwatarGoscia() {
+  if (!goscInfo || !goscInfo.id) return;
+  awatarJest = false;
+  try { awatarGracza.src = "/api/awatar?gosc=" + encodeURIComponent(goscInfo.id) + "&t=" + Date.now(); } catch (e) {}
+}
+
+initBariera();
 
 function startGry() {
   gra = {
