@@ -402,6 +402,34 @@
 
   .gosc-szczegoly .metryki b { color: var(--sakura); font-weight: 700; }
 
+  .sesja {
+    margin-top: 12px;
+    padding: 10px 12px;
+    background: rgba(16, 19, 31, 0.5);
+    border-radius: 10px;
+    border: 1px solid var(--linia);
+  }
+
+  .sesja-naglowek {
+    color: var(--zloto);
+    font-size: 0.75rem;
+    letter-spacing: 0.06em;
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+
+  .sesja-podsumowanie {
+    margin: 6px 0 8px;
+    font-size: 0.86rem;
+    color: var(--tekst);
+    padding-bottom: 8px;
+    border-bottom: 1px dashed var(--linia);
+  }
+
+  .sesja-podsumowanie b { color: var(--zloto); }
+
+  .sesja-final { color: var(--zloto); font-weight: 700; }
+
   /* ---------- oś czasu ---------- */
   .dzien-separator {
     margin: 16px 0 6px;
@@ -475,6 +503,7 @@
   .badge.wizyta { background: rgba(120, 160, 220, 0.18); color: #a8c4ee; }
   .badge.etap { background: rgba(217, 164, 65, 0.16); color: var(--zloto); }
   .badge.proba { background: rgba(246, 200, 216, 0.15); color: var(--sakura); }
+  .badge.wybor { background: rgba(159, 217, 160, 0.14); color: #9fd9a0; }
   .badge.final { background: rgba(199, 62, 58, 0.25); color: #f0a09d; }
 
   .czas-abs { white-space: nowrap; color: var(--tekst); }
@@ -590,6 +619,7 @@
             <option value="">wszystkie typy</option>
             <option value="wizyta">wizyta</option>
             <option value="etap">etap</option>
+            <option value="wybor">zaznaczenie</option>
             <option value="proba">próba odmowy</option>
             <option value="final">finał</option>
           </select>
@@ -775,6 +805,7 @@ function urzadzenie(ua) {
 function kategoriaZdarzenia(z) {
   if (z.typ === "wizyta") return "wizyta";
   if (z.typ === "final") return "final";
+  if (z.typ === "wybor") return "wybor";
   if (z.typ === "etap" && z.etap === "proba-odmowy") return "proba";
   return "etap";
 }
@@ -787,6 +818,7 @@ function opisZdarzenia(z) {
 
 function opisZdarzeniaBez(z) {
   if (z.typ === "wizyta") return { ikona: "👣", tekst: "Wejście na stronę" };
+  if (z.typ === "wybor") return { ikona: "✏️", tekst: "Zaznaczyła — " + (z.pole || "?") + ": „" + (z.wartosc || "?") + "”" };
   if (z.etap === "brama") return { ikona: "🗝️", tekst: "Rozproszyła barierę — podała słowo-klucz" };
   if (z.typ === "final") {
     let t = "WYBRAŁA: " + (z.ema || "?") + ", " + (z.dataSlownie || z.data || "?");
@@ -970,7 +1002,7 @@ function renderujLogi() {
   cialo.innerHTML = lista.map((z, i) => {
     const kat = kategoriaZdarzenia(z);
     const o = opisZdarzenia(z);
-    const etykietyKategorii = { wizyta: "wizyta", etap: "etap", proba: "odmowa", final: "FINAŁ" };
+    const etykietyKategorii = { wizyta: "wizyta", etap: "etap", wybor: "wybór", proba: "odmowa", final: "FINAŁ" };
     return '<tr class="wiersz-logu" data-nr="' + i + '" title="kliknij, żeby zobaczyć surowe dane">' +
       '<td><span class="czas-abs">' + esc(czasAbsolutny(z.timestamp)) + '</span>' +
       '<span class="czas-rel">' + czasWzgledny(z.timestamp) + "</span></td>" +
@@ -1059,16 +1091,61 @@ function renderujSzczegolyGoscia(g) {
     "<span>ostatnio: <b>" + czasWzgledny(ostatnie.timestamp) + "</b></span>" +
     "</div>";
 
-  html += jej.slice(0, 15).map(z => {
-    const o = opisZdarzeniaBez(z);
-    return '<div class="zdarzenie">' +
-      '<span class="ikona">' + o.ikona + "</span>" +
-      '<span class="opis">' + esc(o.tekst) + "</span>" +
-      '<span class="czas" title="' + esc(czasAbsolutny(z.timestamp)) + '">' + czasWzgledny(z.timestamp) + "</span>" +
-      "</div>";
-  }).join("");
+  /* ---- grupowanie na wejścia: nowa sesja przy przejściu bariery lub przerwie > 30 min ---- */
+  const chrono = [...jej].reverse(); /* od najstarszych */
+  const sesje = [];
+  for (const z of chrono) {
+    const t = new Date(z.timestamp).getTime();
+    const biezaca = sesje[sesje.length - 1];
+    if (!biezaca || z.etap === "brama" || t - biezaca.ostatni > 30 * 60 * 1000) {
+      sesje.push({ start: t, ostatni: t, zdarzenia: [z] });
+    } else {
+      biezaca.zdarzenia.push(z);
+      biezaca.ostatni = t;
+    }
+  }
+  sesje.reverse(); /* najnowsze wejście pierwsze */
 
-  if (jej.length > 15) html += '<p class="brak-odpowiedzi" style="margin-top:8px;">…i ' + (jej.length - 15) + " starszych — pełna historia w zakładce Logi (wpisz jej imię w szukajkę)</p>";
+  html += '<div style="margin-top:4px; color:var(--tekst-przyg); font-size:0.78rem; letter-spacing:0.1em; text-transform:uppercase; font-weight:700;">Wejścia (' + sesje.length + ")</div>";
+
+  const POKAZ_SESJI = 6;
+  sesje.slice(0, POKAZ_SESJI).forEach((s, idx) => {
+    const nr = sesje.length - idx;
+    const pierwszeZd = s.zdarzenia[0];
+    const urz = urzadzenie(pierwszeZd.userAgent);
+
+    /* podsumowanie wejścia: finał albo ostatnie zaznaczenia */
+    const finalSesji = [...s.zdarzenia].reverse().find(z => z.typ === "final");
+    const zaznaczenia = {};
+    for (const z of s.zdarzenia) if (z.typ === "wybor" && z.pole) zaznaczenia[z.pole] = z.wartosc;
+
+    let podsumowanie;
+    if (finalSesji) {
+      podsumowanie = '<span class="sesja-final">💮 PRZYPIECZĘTOWAŁA: ' + esc(finalSesji.ema || "?") + " · " + esc(finalSesji.dataSlownie || finalSesji.data || "?") +
+        (finalSesji.pora ? " · " + esc(finalSesji.pora) : "") + "</span>";
+    } else if (Object.keys(zaznaczenia).length > 0) {
+      podsumowanie = "✏️ zaznaczyła (bez pieczęci): " + Object.entries(zaznaczenia).map(([k, v]) => k + ": <b>" + esc(v) + "</b>").join(" · ");
+    } else {
+      podsumowanie = "doszła do: " + esc(najdalszyKrok(s.zdarzenia));
+    }
+
+    html += '<div class="sesja">' +
+      '<div class="sesja-naglowek">wejście #' + nr + " · " + czasAbsolutny(s.start) + (urz !== "?" ? " · 📱 " + esc(urz) : "") + "</div>" +
+      '<div class="sesja-podsumowanie">' + podsumowanie + "</div>" +
+      s.zdarzenia.slice().reverse().map(z => {
+        const o = opisZdarzeniaBez(z);
+        return '<div class="zdarzenie" style="padding:5px 0; font-size:0.84rem;">' +
+          '<span class="ikona">' + o.ikona + "</span>" +
+          '<span class="opis">' + esc(o.tekst) + "</span>" +
+          '<span class="czas">' + new Date(z.timestamp).toLocaleTimeString("pl-PL", { hour: "2-digit", minute: "2-digit", second: "2-digit" }) + "</span>" +
+          "</div>";
+      }).join("") +
+      "</div>";
+  });
+
+  if (sesje.length > POKAZ_SESJI) {
+    html += '<p class="brak-odpowiedzi" style="margin-top:8px;">…i ' + (sesje.length - POKAZ_SESJI) + " wcześniejszych wejść — pełna historia w zakładce Logi (wpisz jej imię w szukajkę)</p>";
+  }
 
   return html;
 }

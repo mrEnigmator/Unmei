@@ -1775,6 +1775,7 @@ document.querySelectorAll(".ema").forEach(btn => {
     btn.classList.add("wybrana");
     wybranaEma = btn.dataset.ema;
     btnDalejEma.style.display = "inline-block";
+    wyslijZdarzenie({ typ: "wybor", pole: "ema", wartosc: wybranaEma });
   });
 });
 
@@ -1838,6 +1839,8 @@ function rysujKalendarz() {
         wybranaData = data;
         rysujKalendarz();
         btnPieczec.classList.add("widoczny");
+        const fmt = new Intl.DateTimeFormat("pl-PL", { weekday: "long", day: "numeric", month: "long" });
+        wyslijZdarzenie({ typ: "wybor", pole: "dzień", wartosc: fmt.format(data) });
       });
     }
     siatka.appendChild(btn);
@@ -1865,6 +1868,7 @@ document.querySelectorAll(".pora").forEach(btn => {
       document.querySelectorAll(".pora").forEach(b => b.classList.remove("wybrana"));
       btn.classList.add("wybrana");
       wybranaPora = btn.dataset.pora;
+      wyslijZdarzenie({ typ: "wybor", pole: "pora", wartosc: wybranaPora });
     }
   });
 });

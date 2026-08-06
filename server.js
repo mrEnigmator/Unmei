@@ -94,6 +94,8 @@ async function apiOdpowiedz(req, res) {
     probyOdmowy: dane.probyOdmowy ?? null,
     gosc: dane.gosc ?? null,
     goscId: dane.goscId ?? null,
+    pole: dane.pole ?? null,
+    wartosc: dane.wartosc ?? null,
     czasGrySekundy: dane.czasGrySekundy ?? null,
     trafieniaWLampiony: dane.trafieniaWLampiony ?? null,
     pominieta: dane.pominieta ?? null,
