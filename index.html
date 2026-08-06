@@ -660,23 +660,6 @@
 
   .gra-overlay .maly { color: var(--sakura); font-size: 0.95rem; }
 
-  #btnSkok {
-    margin-top: 16px;
-    width: min(440px, 94vw);
-    padding: 18px 0;
-    font-size: 1.15rem;
-    font-weight: 700;
-    background: linear-gradient(135deg, var(--torii) 0%, var(--torii-ciemny) 100%);
-    color: #fff7ef;
-    box-shadow: 0 6px 22px rgba(199, 62, 58, 0.4);
-    border-radius: 14px;
-    touch-action: manipulation;
-    user-select: none;
-    -webkit-user-select: none;
-  }
-
-  #btnSkok:active { transform: scale(0.97); }
-
   #btnPominGre {
     margin-top: 16px;
     display: none;
@@ -1031,7 +1014,6 @@
       </div>
     </div>
 
-    <button id="btnSkok" aria-label="Skocz">⛩️ SKOK</button>
     <button id="btnPominGre">duchy litują się — pomiń próbę</button>
   </section>
 
@@ -1490,8 +1472,6 @@ function skokGracza() {
 }
 
 graCanvas.addEventListener("pointerdown", (e) => { e.preventDefault(); skokGracza(); });
-document.getElementById("btnSkok").addEventListener("pointerdown", (e) => { e.preventDefault(); skokGracza(); });
-/* klawiatura: spacja/strzałka w górę obsługiwane globalnie poniżej (także gdy fokus jest na przycisku) */
 document.addEventListener("keydown", (e) => {
   if (!document.getElementById("etapGra").classList.contains("aktywny")) return;
   if (e.code === "Space" || e.code === "ArrowUp") { e.preventDefault(); skokGracza(); }
