@@ -772,6 +772,21 @@ function czasAbsolutny(iso) {
   return d.toLocaleString("pl-PL", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit" });
 }
 
+function odliczanieDoRandki(dataISO) {
+  /* dataISO: "RRRR-MM-DD" — liczymy pełne dni do dnia randki */
+  if (!dataISO) return "";
+  const [r, m, d] = String(dataISO).split("-").map(Number);
+  if (!r || !m || !d) return "";
+  const cel = new Date(r, m - 1, d);
+  const teraz = new Date();
+  const dzis = new Date(teraz.getFullYear(), teraz.getMonth(), teraz.getDate());
+  const dni = Math.round((cel - dzis) / 86400000);
+  if (dni === 0) return "⏳ randka DZIŚ! 🌸";
+  if (dni === 1) return "⏳ randka JUTRO!";
+  if (dni > 1) return "⏳ do randki: " + dni + " dni";
+  return "randka była " + (-dni) + " " + (dni === -1 ? "dzień" : "dni") + " temu ⛩️";
+}
+
 function dzienSlownie(iso) {
   const d = new Date(iso);
   const dzisiaj = new Date(); dzisiaj.setHours(0,0,0,0);
@@ -821,6 +836,7 @@ function opisZdarzeniaBez(z) {
   if (z.typ === "wizyta") return { ikona: "👣", tekst: "Wejście na stronę" };
   if (z.typ === "wybor") return { ikona: "✏️", tekst: "Zaznaczyła — " + (z.pole || "?") + ": „" + (z.wartosc || "?") + "”" };
   if (z.etap === "brama") return { ikona: "🗝️", tekst: "Rozproszyła barierę — podała słowo-klucz" };
+  if (z.etap === "dzwon") return { ikona: "🔔", tekst: "Obudziła duchy — uderzyła w dzwon świątyni" };
   if (z.typ === "final") {
     let t = "WYBRAŁA: " + (z.ema || "?") + ", " + (z.dataSlownie || z.data || "?");
     if (z.pora) t += ", " + z.pora;
@@ -879,7 +895,7 @@ function renderujPrzeglad() {
     const wiersze = [...wgOsoby.values()].map(f =>
       '<div class="szczegoly">' + (f.gosc ? "「" + esc(f.gosc) + "」 · " : "") + esc(f.ema || "?") + " · " + esc(f.dataSlownie || f.data || "?") +
       (f.pora ? " · " + esc(f.pora) : "") +
-      '<div class="kiedy">kliknęła ' + czasWzgledny(f.timestamp) + " (" + czasAbsolutny(f.timestamp) + ")</div></div>"
+      '<div class="kiedy">kliknęła ' + czasWzgledny(f.timestamp) + " (" + czasAbsolutny(f.timestamp) + ") · " + odliczanieDoRandki(f.data) + "</div></div>"
     ).join("");
     kartaStatus.innerHTML =
       '<div class="etykieta">Czy już wybrała?</div>' +

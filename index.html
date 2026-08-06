@@ -249,8 +249,43 @@
   }
 
   /* ================= ETAP 1: TORII ================= */
+  .dzwon {
+    margin-top: 26px;
+    background: none;
+    border: none;
+    padding: 6px;
+    cursor: pointer;
+    filter: drop-shadow(0 0 14px rgba(217, 164, 65, 0.35));
+    transition: filter 0.3s ease;
+  }
+
+  .dzwon:hover { filter: drop-shadow(0 0 26px rgba(217, 164, 65, 0.65)); }
+
+  .dzwon.dzwoni svg { animation: dzwonienie 0.9s ease; transform-origin: 50% 8%; }
+
+  @keyframes dzwonienie {
+    0% { transform: rotate(0); }
+    15% { transform: rotate(14deg); }
+    35% { transform: rotate(-11deg); }
+    55% { transform: rotate(7deg); }
+    75% { transform: rotate(-4deg); }
+    100% { transform: rotate(0); }
+  }
+
+  .dzwon.uderzony { opacity: 0.75; }
+
+  body.wstrzas { animation: wstrzas-ekranu 0.5s ease; }
+
+  @keyframes wstrzas-ekranu {
+    0%, 100% { transform: translate(0, 0); }
+    20% { transform: translate(-4px, 2px); }
+    40% { transform: translate(4px, -2px); }
+    60% { transform: translate(-3px, -1px); }
+    80% { transform: translate(2px, 1px); }
+  }
+
   .torii-svg {
-    margin-top: 36px;
+    margin-top: 20px;
     width: min(280px, 78vw);
     height: auto;
     cursor: pointer;
@@ -804,6 +839,14 @@
 
   .final-karta p { margin-top: 16px; font-size: 1rem; }
 
+  .odliczanie {
+    font-family: "Shippori Mincho", serif;
+    color: var(--torii);
+    font-weight: 700;
+    font-size: 1.05rem;
+    min-height: 1.5em;
+  }
+
   .final-karta .podpis {
     margin-top: 22px;
     font-family: "Shippori Mincho", serif;
@@ -843,6 +886,27 @@
     <h1>Świątynia Przeznaczenia</h1>
     <p class="podtytul">Podobno kto przejdzie przez tę bramę, pozna swoją wróżbę na najbliższy tydzień.</p>
 
+    <button class="dzwon" id="btnDzwon" aria-label="Uderz w dzwon świątyni">
+      <svg viewBox="0 0 80 110" width="64" height="88" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <!-- lina -->
+        <rect x="37" y="0" width="6" height="26" rx="3" fill="#8f2b28"/>
+        <circle cx="40" cy="30" r="6" fill="#8f2b28"/>
+        <!-- dzwon suzu -->
+        <g id="dzwonKorpus">
+          <circle cx="40" cy="62" r="26" fill="url(#zlotoGrad)" stroke="#8a6420" stroke-width="2"/>
+          <path d="M14 62 Q40 74 66 62" stroke="#8a6420" stroke-width="2.5" fill="none"/>
+          <rect x="36" y="74" width="8" height="14" rx="4" fill="#8a6420"/>
+        </g>
+        <defs>
+          <radialGradient id="zlotoGrad" cx="0.35" cy="0.3">
+            <stop offset="0%" stop-color="#f4d78a"/>
+            <stop offset="60%" stop-color="#d9a441"/>
+            <stop offset="100%" stop-color="#a87a28"/>
+          </radialGradient>
+        </defs>
+      </svg>
+    </button>
+
     <button class="torii-svg" id="btnTorii" aria-label="Przejdź przez bramę torii">
       <svg viewBox="0 0 280 240" xmlns="http://www.w3.org/2000/svg" role="img" aria-hidden="true">
         <!-- górna belka (kasagi) -->
@@ -861,7 +925,7 @@
       </svg>
     </button>
 
-    <p class="hint">⛩️ kliknij bramę, żeby wejść</p>
+    <p class="hint" id="hintEtap1">🔔 uderz w dzwon, żeby obudzić duchy</p>
   </section>
 
   <!-- ============ ETAP 2: OMIKUJI ============ -->
@@ -982,7 +1046,11 @@
       <div class="kanji-final">大吉</div>
       <p id="finalTekst"></p>
       <p>Napisz mi <strong>大吉</strong> i uznaję sprawę za przypieczętowaną. よろしくね。</p>
-      <button class="btn-glowny" id="btnKopiujFinal" style="margin-top:18px; font-size:0.95rem; padding:12px 22px;">Skopiuj 大吉 📋</button>
+      <p class="odliczanie" id="odliczanie"></p>
+      <div style="display:flex; gap:10px; flex-wrap:wrap; justify-content:center; margin-top:18px;">
+        <button class="btn-glowny" id="btnKopiujFinal" style="font-size:0.95rem; padding:12px 22px;">Skopiuj 大吉 📋</button>
+        <button class="btn-glowny" id="btnGoshuin" style="font-size:0.95rem; padding:12px 22px; background:linear-gradient(135deg,#b8860b 0%,#8a6420 100%); box-shadow:0 6px 22px rgba(217,164,65,0.35);">Pobierz pieczęć 御朱印</button>
+      </div>
     </div>
   </section>
 
@@ -1181,8 +1249,57 @@ function pokazEtap(numer) {
   wyslijZdarzenie({ typ: "etap", etap: numer });
 }
 
-/* ============ ETAP 1: torii ============ */
-document.getElementById("btnTorii").addEventListener("click", () => pokazEtap(2));
+/* ============ ETAP 1: dzwon + torii ============ */
+const btnDzwon = document.getElementById("btnDzwon");
+const hintEtap1 = document.getElementById("hintEtap1");
+let dzwonUderzony = false;
+
+function dzwiekGongu() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const t = ctx.currentTime;
+    /* gong = kilka zanikających składowych sinusoidalnych */
+    [196, 294, 392, 523].forEach((f, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = "sine";
+      osc.frequency.value = f * (1 + (Math.random() - 0.5) * 0.01);
+      gain.gain.setValueAtTime(0.28 / (i + 1), t);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t + 2.8);
+      osc.connect(gain).connect(ctx.destination);
+      osc.start(t);
+      osc.stop(t + 3);
+    });
+  } catch (e) { /* bez dźwięku też dobrze */ }
+}
+
+btnDzwon.addEventListener("click", () => {
+  btnDzwon.classList.remove("dzwoni");
+  void btnDzwon.offsetWidth;
+  btnDzwon.classList.add("dzwoni");
+  dzwiekGongu();
+
+  if (!reducedMotion) {
+    document.body.classList.remove("wstrzas");
+    void document.body.offsetWidth;
+    document.body.classList.add("wstrzas");
+  }
+
+  if (!dzwonUderzony) {
+    dzwonUderzony = true;
+    btnDzwon.classList.add("uderzony");
+    hintEtap1.textContent = "⛩️ duchy się obudziły — kliknij bramę, żeby wejść";
+    wyslijZdarzenie({ typ: "etap", etap: "dzwon" });
+  }
+});
+
+document.getElementById("btnTorii").addEventListener("click", () => {
+  if (!dzwonUderzony) {
+    hintEtap1.textContent = "🔔 najpierw obudź duchy — uderz w dzwon!";
+    return;
+  }
+  pokazEtap(2);
+});
 
 /* ============ ETAP 2: omikuji ============ */
 const pudelko = document.getElementById("pudelko");
@@ -1955,6 +2072,109 @@ btnPieczec.addEventListener("click", () => {
   document.getElementById("finalKarta").style.display = "block";
 
   deszczSakury();
+
+  /* ---- odliczanie do dnia przeznaczenia (bez godziny — umawiamy się na dzień i porę) ---- */
+  const celDnia = new Date(wybranaData.getFullYear(), wybranaData.getMonth(), wybranaData.getDate());
+  const elOdliczanie = document.getElementById("odliczanie");
+
+  function tikOdliczania() {
+    const teraz = new Date();
+    const dzisPolnoc = new Date(teraz.getFullYear(), teraz.getMonth(), teraz.getDate());
+
+    if (dzisPolnoc.getTime() === celDnia.getTime()) {
+      elOdliczanie.textContent = "Dzień przeznaczenia to DZIŚ! 🌸" + (wybranaPora ? " (" + wybranaPora + ")" : "");
+      return;
+    }
+    if (teraz > celDnia) {
+      elOdliczanie.textContent = "Przeznaczenie się wypełniło. ⛩️";
+      return;
+    }
+    const ms = celDnia - teraz;
+    const dni = Math.floor(ms / 86400000);
+    const godz = Math.floor((ms % 86400000) / 3600000);
+    const min = Math.floor((ms % 3600000) / 60000);
+    elOdliczanie.textContent = "⏳ do dnia przeznaczenia: " +
+      (dni > 0 ? dni + " " + (dni === 1 ? "dzień" : "dni") + " " : "") +
+      godz + " godz. " + min + " min" +
+      (wybranaPora ? " · " + wybranaPora : "");
+  }
+
+  tikOdliczania();
+  setInterval(tikOdliczania, 30000);
+
+  /* ---- pieczęć goshuin do pobrania ---- */
+  document.getElementById("btnGoshuin").addEventListener("click", async () => {
+    try { await document.fonts.ready; } catch (e) {}
+
+    const k = document.createElement("canvas");
+    k.width = 620;
+    k.height = 860;
+    const c = k.getContext("2d");
+
+    /* papier */
+    c.fillStyle = "#f5efe2";
+    c.fillRect(0, 0, 620, 860);
+    c.strokeStyle = "rgba(60, 47, 38, 0.08)";
+    c.lineWidth = 1;
+    for (let y = 40; y < 860; y += 26) { c.beginPath(); c.moveTo(30, y); c.lineTo(590, y); c.stroke(); }
+
+    /* podwójna czerwona ramka */
+    c.strokeStyle = "#c73e3a";
+    c.lineWidth = 5;
+    c.strokeRect(22, 22, 576, 816);
+    c.lineWidth = 1.5;
+    c.strokeRect(34, 34, 552, 792);
+
+    c.textAlign = "center";
+
+    /* nagłówek */
+    c.fillStyle = "#9e2f2c";
+    c.font = "700 54px 'Shippori Mincho', serif";
+    c.fillText("運命神社", 310, 110);
+    c.fillStyle = "#8a7a63";
+    c.font = "20px 'Zen Kaku Gothic New', sans-serif";
+    c.fillText("goshuin · pieczęć Świątyni Przeznaczenia", 310, 145);
+
+    /* wielka okrągła pieczęć */
+    c.save();
+    c.translate(310, 330);
+    c.rotate(-0.06);
+    c.beginPath(); c.arc(0, 0, 130, 0, 6.29);
+    c.fillStyle = "#c73e3a"; c.fill();
+    c.beginPath(); c.arc(0, 0, 118, 0, 6.29);
+    c.strokeStyle = "#f5efe2"; c.lineWidth = 3; c.stroke();
+    c.fillStyle = "#f5efe2";
+    c.font = "800 92px 'Shippori Mincho', serif";
+    c.fillText("大吉", 0, 32);
+    c.restore();
+
+    /* dane */
+    c.fillStyle = "#3c2f26";
+    c.font = "700 34px 'Shippori Mincho', serif";
+    c.fillText(goscInfo && goscInfo.imie ? goscInfo.imie : "Wybranka losu", 310, 540);
+    c.fillStyle = "#8a7a63";
+    c.font = "20px 'Zen Kaku Gothic New', sans-serif";
+    c.fillText("poznała swoje przeznaczenie", 310, 572);
+
+    c.fillStyle = "#3c2f26";
+    c.font = "26px 'Zen Kaku Gothic New', sans-serif";
+    const fmt = new Intl.DateTimeFormat("pl-PL", { weekday: "long", day: "numeric", month: "long" });
+    c.fillText("💮 " + (wybranaEma || "randka"), 310, 630);
+    c.fillText(fmt.format(wybranaData) + (wybranaPora ? " · " + wybranaPora : ""), 310, 668);
+
+    /* stopka */
+    c.fillStyle = "#9e2f2c";
+    c.font = "700 30px 'Shippori Mincho', serif";
+    c.fillText("縁結び", 310, 748);
+    c.fillStyle = "#8a7a63";
+    c.font = "18px 'Zen Kaku Gothic New', sans-serif";
+    c.fillText("en-musubi — związanie losów · " + new Date().toLocaleDateString("pl-PL"), 310, 780);
+
+    const a = document.createElement("a");
+    a.href = k.toDataURL("image/png");
+    a.download = "goshuin-swiatynia-przeznaczenia.png";
+    a.click();
+  });
 
   /* przycisk kopiowania 大吉 — żeby mogła od razu wkleić i wysłać */
   const btnKopiuj = document.getElementById("btnKopiujFinal");
