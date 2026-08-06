@@ -1000,15 +1000,28 @@ const formBariery = document.getElementById("formBariery");
 const bladBariery = document.getElementById("bladBariery");
 
 async function initBariera() {
-  if (goscInfo) { zaladujAwatarGoscia(); return; } /* już przeszła barierę w tej sesji */
   try {
-    const odp = await fetch("/api/brama");
+    const adres = "/api/brama" + (goscInfo ? "?gosc=" + encodeURIComponent(goscInfo.id) : "");
+    const odp = await fetch(adres);
     const dane = await odp.json();
+
+    /* zapamiętany gość, który wciąż istnieje — wchodzi bez pytania */
+    if (goscInfo && dane.goscWazny) { zaladujAwatarGoscia(); return; }
+
+    /* gość usunięty w panelu albo nieznany — czyścimy sesję */
+    if (goscInfo) {
+      goscInfo = null;
+      try { sessionStorage.removeItem("gosc"); } catch (e) {}
+    }
+
     if (dane.wymagane) {
       document.querySelectorAll(".etap").forEach(s => s.classList.remove("aktywny"));
       document.getElementById("etap0").classList.add("aktywny");
     }
-  } catch (e) { /* brak backendu (podgląd z dysku) — bez bariery */ }
+  } catch (e) {
+    /* brak backendu (podgląd z dysku) — bez bariery */
+    if (goscInfo) zaladujAwatarGoscia();
+  }
 }
 
 formBariery.addEventListener("submit", async (e) => {

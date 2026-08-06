@@ -180,9 +180,15 @@ async function zapiszGosci(goscie) {
 
 /* --- publiczne: brama --- */
 
-async function apiBramaStatus(res) {
+async function apiBramaStatus(url, res) {
   const goscie = await wczytajGosci();
-  json(res, { ok: true, wymagane: goscie.length > 0 });
+  const id = url.searchParams.get("gosc");
+  json(res, {
+    ok: true,
+    wymagane: goscie.length > 0,
+    /* pozwala frontendowi sprawdzić, czy zapamiętany w sesji gość nadal istnieje */
+    goscWazny: id ? goscie.some(g => g.id === id) : null
+  });
 }
 
 async function apiBramaOtworz(req, res) {
@@ -324,7 +330,7 @@ const serwer = http.createServer(async (req, res) => {
     if (sciezka === "/api/odpowiedz" && req.method === "POST") return await apiOdpowiedz(req, res);
     if (sciezka === "/api/admin/login" && req.method === "POST") return await apiLogin(req, res);
     if (sciezka === "/api/admin/zdarzenia" && req.method === "GET") return await apiZdarzenia(req, res);
-    if (sciezka === "/api/brama" && req.method === "GET") return await apiBramaStatus(res);
+    if (sciezka === "/api/brama" && req.method === "GET") return await apiBramaStatus(url, res);
     if (sciezka === "/api/brama" && req.method === "POST") return await apiBramaOtworz(req, res);
     if (sciezka === "/api/awatar" && req.method === "GET") return await apiAwatarPubliczny(url, res);
     if (sciezka === "/api/admin/goscie" && req.method === "GET") return await apiGoscieLista(req, res);
