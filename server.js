@@ -305,6 +305,55 @@ async function apiAwatarUsun(req, res, url) {
   json(res, { ok: true });
 }
 
+/* --- admin: czyszczenie danych gościa (wymaga PONOWNEGO podania hasła admina) --- */
+
+async function apiWyczyscDaneGoscia(req, res, url) {
+  if (!zautoryzowany(req)) return json(res, { ok: false, blad: "Brak autoryzacji" }, 401);
+
+  let dane;
+  try {
+    dane = JSON.parse(await wczytajCialo(req));
+  } catch (e) {
+    return json(res, { ok: false, blad: "Nieprawidłowe dane" }, 400);
+  }
+
+  /* dodatkowe potwierdzenie: hasło administratora wpisane jeszcze raz */
+  const haslo = typeof dane?.haslo === "string" ? dane.haslo : "";
+  if (!(await bezpiecznePorownanie(haslo, ADMIN_HASLO))) {
+    return json(res, { ok: false, blad: "Nieprawidłowe hasło administratora" }, 401);
+  }
+
+  const id = url.searchParams.get("gosc") || "";
+  if (!id) return json(res, { ok: false, blad: "Brak identyfikatora gościa" }, 400);
+
+  const goscie = await wczytajGosci();
+  const gosc = goscie.find(g => g.id === id);
+  const imie = gosc ? gosc.imie : null;
+
+  let tresc = "";
+  try {
+    tresc = await fsp.readFile(PLIK_ZDARZEN, "utf8");
+  } catch (e) {
+    if (e.code !== "ENOENT") throw e;
+  }
+
+  const linie = tresc.split("\n").filter(Boolean);
+  const zostaja = [];
+  let usuniete = 0;
+  for (const linia of linie) {
+    try {
+      const z = JSON.parse(linia);
+      if (z.goscId === id || (imie && z.gosc === imie)) { usuniete++; continue; }
+      zostaja.push(linia);
+    } catch (e) {
+      zostaja.push(linia); /* uszkodzonych wpisów nie ruszamy */
+    }
+  }
+
+  await fsp.writeFile(PLIK_ZDARZEN, zostaja.length ? zostaja.join("\n") + "\n" : "", "utf8");
+  json(res, { ok: true, usuniete });
+}
+
 /* ---------- pliki statyczne ---------- */
 
 const STATYCZNE = {
@@ -312,6 +361,7 @@ const STATYCZNE = {
   "/index.html": { plik: "index.html", typ: "text/html; charset=utf-8" },
   "/jinja-kanri": { plik: "jinja-kanri.html", typ: "text/html; charset=utf-8" },
   "/jinja-kanri.html": { plik: "jinja-kanri.html", typ: "text/html; charset=utf-8" },
+  "/adminjinja": { plik: "jinja-kanri.html", typ: "text/html; charset=utf-8" },
 };
 
 async function serwujStatyczny(res, wpis) {
@@ -336,6 +386,7 @@ const serwer = http.createServer(async (req, res) => {
     if (sciezka === "/api/admin/goscie" && req.method === "GET") return await apiGoscieLista(req, res);
     if (sciezka === "/api/admin/goscie" && req.method === "POST") return await apiGoscDodaj(req, res);
     if (sciezka === "/api/admin/goscie" && req.method === "DELETE") return await apiGoscUsun(req, res, url);
+    if (sciezka === "/api/admin/wyczysc" && req.method === "POST") return await apiWyczyscDaneGoscia(req, res, url);
     if (sciezka === "/api/admin/awatar" && req.method === "POST") return await apiAwatarZapisz(req, res, url);
     if (sciezka === "/api/admin/awatar" && req.method === "DELETE") return await apiAwatarUsun(req, res, url);
 

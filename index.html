@@ -544,6 +544,39 @@
     transform: translateY(-4px);
   }
 
+  .ema[data-ema="__wlasna"] {
+    grid-column: 1 / -1;
+    justify-self: center;
+    width: min(160px, 45vw);
+  }
+
+  #wlasnaEmaBox { margin-top: 22px; width: min(340px, 90vw); }
+
+  .wlasna-ema-etykieta {
+    display: block;
+    color: var(--zloto);
+    font-size: 0.88rem;
+    margin-bottom: 10px;
+    letter-spacing: 0.03em;
+  }
+
+  #poleWlasnejEmy {
+    width: 100%;
+    padding: 13px 16px;
+    font-family: inherit;
+    font-size: 1rem;
+    text-align: center;
+    background: rgba(245, 239, 226, 0.06);
+    border: 1px solid rgba(233, 228, 216, 0.3);
+    border-radius: 10px;
+    color: var(--tekst);
+  }
+
+  #poleWlasnejEmy:focus-visible {
+    outline: 3px solid var(--zloto);
+    outline-offset: 2px;
+  }
+
   #btnDalejEma { margin-top: 34px; }
 
   /* ================= ETAP: GRA 試練 ================= */
@@ -915,9 +948,15 @@
 
     <div class="tabliczki" role="group" aria-label="Wybór tabliczki ema">
       <button class="ema" data-ema="Ramen"><span class="znak">麺</span><span class="nazwa">Ramen</span></button>
-      <button class="ema" data-ema="Kino"><span class="znak">映</span><span class="nazwa">Kino</span></button>
+      <button class="ema" data-ema="Kawa"><span class="znak">珈</span><span class="nazwa">Kawa</span></button>
       <button class="ema" data-ema="Spacer"><span class="znak">星</span><span class="nazwa">Spacer</span></button>
-      <button class="ema" data-ema="Matcha"><span class="znak">茶</span><span class="nazwa">Matcha</span></button>
+      <button class="ema" data-ema="Przejażdżka"><span class="znak">車</span><span class="nazwa">Przejażdżka</span></button>
+      <button class="ema" data-ema="__wlasna"><span class="znak">夢</span><span class="nazwa">Twój pomysł ✨</span></button>
+    </div>
+
+    <div id="wlasnaEmaBox" style="display:none;">
+      <label for="poleWlasnejEmy" class="wlasna-ema-etykieta">夢 (yume) znaczy „marzenie" — napisz swoje:</label>
+      <input type="text" id="poleWlasnejEmy" maxlength="60" placeholder="np. zachód słońca i lampiony…" autocomplete="off">
     </div>
 
     <button class="btn-glowny" id="btnDalejEma" style="display:none;">Dalej ⛩️</button>
@@ -1774,18 +1813,41 @@ function rysujGre() {
 /* ============ ETAP 4: ema ============ */
 let wybranaEma = null;
 const btnDalejEma = document.getElementById("btnDalejEma");
+const wlasnaEmaBox = document.getElementById("wlasnaEmaBox");
+const poleWlasnejEmy = document.getElementById("poleWlasnejEmy");
 
 document.querySelectorAll(".ema").forEach(btn => {
   btn.addEventListener("click", () => {
     document.querySelectorAll(".ema").forEach(b => b.classList.remove("wybrana"));
     btn.classList.add("wybrana");
-    wybranaEma = btn.dataset.ema;
-    btnDalejEma.style.display = "inline-block";
-    wyslijZdarzenie({ typ: "wybor", pole: "ema", wartosc: wybranaEma });
+
+    if (btn.dataset.ema === "__wlasna") {
+      /* własny pomysł — pokazujemy pole, „Dalej” dopiero gdy coś wpisze */
+      wlasnaEmaBox.style.display = "block";
+      wybranaEma = poleWlasnejEmy.value.trim() || null;
+      btnDalejEma.style.display = wybranaEma ? "inline-block" : "none";
+      poleWlasnejEmy.focus();
+    } else {
+      wlasnaEmaBox.style.display = "none";
+      wybranaEma = btn.dataset.ema;
+      btnDalejEma.style.display = "inline-block";
+      wyslijZdarzenie({ typ: "wybor", pole: "ema", wartosc: wybranaEma });
+    }
   });
 });
 
-btnDalejEma.addEventListener("click", () => pokazEtap(5));
+poleWlasnejEmy.addEventListener("input", () => {
+  wybranaEma = poleWlasnejEmy.value.trim() || null;
+  btnDalejEma.style.display = wybranaEma ? "inline-block" : "none";
+});
+
+btnDalejEma.addEventListener("click", () => {
+  const wybranyKafel = document.querySelector(".ema.wybrana");
+  if (wybranyKafel && wybranyKafel.dataset.ema === "__wlasna" && wybranaEma) {
+    wyslijZdarzenie({ typ: "wybor", pole: "ema", wartosc: wybranaEma + " ✨ (własny pomysł)" });
+  }
+  pokazEtap(5);
+});
 
 /* ============ ETAP 5: kalendarz ============ */
 const naglowekMiesiaca = document.getElementById("naglowekMiesiaca");

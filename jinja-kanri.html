@@ -581,6 +581,7 @@
       <div class="karta">
         <h3>Statystyki</h3>
         <div class="kafle" id="kontenerKafli"></div>
+        <div class="tabela-otoczka" id="statGoscie" style="margin-top:16px;"></div>
         <p class="zart" id="zartOdmowy"></p>
       </div>
 
@@ -893,25 +894,49 @@ function renderujPrzeglad() {
       "</div>";
   }
 
-  /* kafle */
+  /* kafle globalne — świat wielu gości */
   const wizyty = zdarzenia.filter(z => z.typ === "wizyta");
-  const proby = zdarzenia.filter(z => kategoriaZdarzenia(z) === "proba");
-  const maxProb = proby.reduce((m, z) => Math.max(m, z.probyOdmowy || 0), 0);
-  const pierwsza = zdarzenia.length ? zdarzenia[zdarzenia.length - 1] : null;
   const ostatnia = zdarzenia.length ? zdarzenia[0] : null;
-  const urzadzenia = [...new Set(wizyty.map(z => urzadzenie(z.userAgent)))].filter(u => u !== "?");
+  const osobyZFinalem = new Set(finaly.map(f => f.goscId || f.gosc || "anonim")).size;
 
   document.getElementById("kontenerKafli").innerHTML =
+    kafel(ostatniGoscie.length, "gości z kluczem") +
+    kafel(osobyZFinalem + " / " + Math.max(ostatniGoscie.length, osobyZFinalem), "przypieczętowało los") +
     kafel(wizyty.length, "wizyt na stronie") +
-    kafel(zdarzenia.length, "zdarzeń łącznie") +
-    kafel(maxProb, "prób „Odrzucam los”") +
-    kafel(ostatnia ? czasWzgledny(ostatnia.timestamp) : "—", "ostatnia aktywność") +
-    kafel(pierwsza ? czasWzgledny(pierwsza.timestamp) : "—", "pierwsza wizyta") +
-    kafel(urzadzenia.length ? esc(urzadzenia.join(", ")) : "—", "urządzenia");
+    kafel(ostatnia ? czasWzgledny(ostatnia.timestamp) : "—", "ostatnia aktywność");
 
-  document.getElementById("zartOdmowy").textContent =
-    maxProb === 0 ? "ani razu nie próbowała odrzucić losu — dobry znak 🌸"
-    : "próbowała odrzucić los " + maxProb + " " + (maxProb === 1 ? "raz" : "razy") + " — przycisk był szybszy 🙃";
+  /* tabela: każda osoba osobno */
+  const statGoscie = document.getElementById("statGoscie");
+  if (ostatniGoscie.length === 0) {
+    statGoscie.innerHTML = "";
+  } else {
+    statGoscie.innerHTML =
+      "<table><thead><tr><th>Gość</th><th>Status</th><th>Wejść</th><th>Odmów</th><th>Urządzenia</th><th>Ostatnio</th></tr></thead><tbody>" +
+      ostatniGoscie.map(g => {
+        const jej = zdarzeniaGoscia(g);
+        const jejFinal = jej.find(z => z.typ === "final");
+        const status = jejFinal
+          ? '💮 <b style="color:var(--zloto);">' + esc(jejFinal.ema || "?") + "</b>, " + esc(jejFinal.dataSlownie || jejFinal.data || "?") + (jejFinal.pora ? ", " + esc(jejFinal.pora) : "")
+          : (jej.length ? "🕐 w drodze — " + esc(najdalszyKrok(jej)) : "— jeszcze nie weszła");
+        const wejscia = jej.filter(z => z.etap === "brama").length;
+        const odmowy = jej.reduce((m, z) => Math.max(m, z.probyOdmowy || 0), 0);
+        const urz = [...new Set(jej.map(z => urzadzenie(z.userAgent)))].filter(u => u !== "?");
+        return "<tr><td><b>" + esc(g.imie) + "</b></td><td>" + status + "</td><td>" + wejscia + "</td><td>" + odmowy +
+          "</td><td>" + (urz.length ? esc(urz.join(", ")) : "—") + "</td><td>" + (jej.length ? czasWzgledny(jej[0].timestamp) : "—") + "</td></tr>";
+      }).join("") +
+      "</tbody></table>";
+  }
+
+  /* żarcik dopasowany do wielu osób */
+  const maxProb = zdarzenia.reduce((m, z) => Math.max(m, z.probyOdmowy || 0), 0);
+  const zartEl = document.getElementById("zartOdmowy");
+  if (maxProb === 0) {
+    zartEl.textContent = "nikt jeszcze nie próbował odrzucić losu — dobry znak 🌸";
+  } else {
+    const rekordzistka = zdarzenia.find(z => z.probyOdmowy === maxProb);
+    zartEl.textContent = (rekordzistka && rekordzistka.gosc ? "「" + rekordzistka.gosc + "」 " : "ktoś ") +
+      "próbowała odrzucić los aż " + maxProb + " " + (maxProb === 1 ? "raz" : "razy") + " — przycisk był szybszy 🙃";
+  }
 
   /* droga przez świątynię */
   const etapy = new Set(zdarzenia.filter(z => z.typ === "etap" && typeof z.etap === "number").map(z => z.etap));
@@ -1174,12 +1199,13 @@ async function odswiezGosci() {
     const dane = await odp.json();
     if (!dane.ok) return;
 
+    ostatniGoscie = dane.goscie;
+
     if (dane.goscie.length === 0) {
       listaGosci.innerHTML = '<p class="puste">Brak gości — strona jest otwarta dla każdego (i gra liskiem 🦊). Dodaj gościa, żeby włączyć barierę z hasłem.</p>';
+      renderujPrzeglad();
       return;
     }
-
-    ostatniGoscie = dane.goscie;
     listaGosci.innerHTML = dane.goscie.map(g =>
       '<div class="gosc-blok" data-id="' + g.id + '">' +
       '<div class="gosc-wiersz" data-szczegoly="' + g.id + '" title="Kliknij, żeby zobaczyć jej odpowiedzi">' +
@@ -1191,6 +1217,7 @@ async function odswiezGosci() {
       '<div class="gosc-akcje">' +
       '<button class="btn-cichy" data-akcja="zdjecie" data-id="' + g.id + '" title="Wgraj zdjęcie do gry">📷</button>' +
       (g.maAwatar ? '<button class="btn-cichy" data-akcja="usun-zdjecie" data-id="' + g.id + '" title="Przywróć liska">🦊</button>' : '') +
+      '<button class="btn-cichy" data-akcja="wyczysc" data-id="' + g.id + '" data-imie="' + esc(g.imie) + '" title="Wyczyść jej dane (wymaga hasła admina)">🧹</button>' +
       '<button class="btn-cichy" data-akcja="usun" data-id="' + g.id + '" data-imie="' + esc(g.imie) + '" title="Usuń gościa">🗑</button>' +
       '</div>' +
       '<span class="gosc-strzalka">▶</span>' +
@@ -1198,6 +1225,7 @@ async function odswiezGosci() {
       '<div class="gosc-szczegoly"></div>' +
       '</div>'
     ).join("");
+    renderujPrzeglad(); /* statystyki per gość zależą od listy gości */
   } catch (e) { /* offline */ }
 }
 
@@ -1252,6 +1280,28 @@ listaGosci.addEventListener("click", async (e) => {
     if (odp.status === 401) { wyloguj(); return; }
     goscStatus.textContent = "Lisek wraca do gry. 🦊";
     odswiezGosci();
+    return;
+  }
+
+  if (btn.dataset.akcja === "wyczysc") {
+    const hasloAdmina = prompt("Czyszczenie danych „" + btn.dataset.imie + "” usunie CAŁĄ jej historię (wejścia, odpowiedzi, logi).\n\nPodaj hasło administratora, żeby potwierdzić:");
+    if (!hasloAdmina) return;
+    try {
+      const odp = await fetch("/api/admin/wyczysc?gosc=" + encodeURIComponent(id), {
+        method: "POST",
+        headers: naglowkiAdmina(),
+        body: JSON.stringify({ haslo: hasloAdmina })
+      });
+      const dane = await odp.json();
+      if (dane.ok) {
+        goscStatus.textContent = "Wyczyszczono dane „" + btn.dataset.imie + "” (" + dane.usuniete + " zdarzeń). Profil i słowo-klucz zostały.";
+        wczytajZdarzenia();
+      } else {
+        goscStatus.textContent = "Nie udało się: " + (dane.blad || "?");
+      }
+    } catch (err) {
+      goscStatus.textContent = "Błąd połączenia.";
+    }
     return;
   }
 
