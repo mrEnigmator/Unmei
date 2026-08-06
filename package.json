@@ -1,0 +1,13 @@
+{
+  "name": "unmei",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Świątynia Przeznaczenia — strona-zaproszenie na randkę + panel admina",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

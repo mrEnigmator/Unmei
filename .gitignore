@@ -1,3 +1,5 @@
 .dev.vars
 .wrangler/
 .idea/
+node_modules/
+dane/
