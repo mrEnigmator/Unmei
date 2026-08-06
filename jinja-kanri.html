@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>神社管理 — Panel Świątyni</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700;800&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --noc1: #10131f;
+    --noc2: #1e2436;
+    --noc3: #2b2033;
+    --torii: #c73e3a;
+    --torii-ciemny: #9e2f2c;
+    --sakura: #f6c8d8;
+    --papier: #f5efe2;
+    --zloto: #d9a441;
+    --tekst: #e9e4d8;
+    --tekst-przyg: #a9a294;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    min-height: 100vh;
+    background: linear-gradient(180deg, var(--noc1) 0%, var(--noc2) 55%, var(--noc3) 100%);
+    background-attachment: fixed;
+    color: var(--tekst);
+    font-family: "Zen Kaku Gothic New", sans-serif;
+    line-height: 1.6;
+    padding: 28px 16px 64px;
+  }
+
+  h1, h2, .kanji { font-family: "Shippori Mincho", serif; }
+
+  .kontener { max-width: 720px; margin: 0 auto; }
+
+  header { text-align: center; margin-bottom: 30px; }
+
+  header .kanji {
+    font-size: 2rem;
+    color: var(--sakura);
+    letter-spacing: 0.3em;
+    margin-left: 0.3em;
+    text-shadow: 0 0 20px rgba(246, 200, 216, 0.4);
+  }
+
+  header .romaji {
+    color: var(--tekst-przyg);
+    font-size: 0.8rem;
+    letter-spacing: 0.35em;
+  }
+
+  header h1 { font-size: 1.3rem; margin-top: 10px; }
+
+  .karta {
+    background: rgba(16, 19, 31, 0.6);
+    border: 1px solid rgba(217, 164, 65, 0.25);
+    border-radius: 14px;
+    padding: 22px 20px;
+    margin-bottom: 20px;
+    backdrop-filter: blur(4px);
+  }
+
+  button, input {
+    font-family: inherit;
+    font-size: 1rem;
+    border-radius: 10px;
+  }
+
+  button { cursor: pointer; border: none; transition: transform 0.2s ease, box-shadow 0.2s ease; }
+
+  button:focus-visible, input:focus-visible {
+    outline: 3px solid var(--zloto);
+    outline-offset: 2px;
+  }
+
+  .btn-glowny {
+    background: linear-gradient(135deg, var(--torii) 0%, var(--torii-ciemny) 100%);
+    color: #fff7ef;
+    font-weight: 700;
+    padding: 12px 24px;
+    box-shadow: 0 6px 20px rgba(199, 62, 58, 0.4);
+  }
+
+  .btn-glowny:hover { transform: translateY(-2px); }
+
+  /* ---------- logowanie ---------- */
+  #widokLogowania { max-width: 380px; margin: 10vh auto 0; text-align: center; }
+
+  #widokLogowania input {
+    width: 100%;
+    padding: 13px 16px;
+    margin: 18px 0 14px;
+    background: rgba(245, 239, 226, 0.06);
+    border: 1px solid rgba(233, 228, 216, 0.3);
+    color: var(--tekst);
+  }
+
+  #bladLogowania { color: #e88; font-size: 0.9rem; min-height: 1.5em; margin-top: 10px; }
+
+  /* ---------- status ---------- */
+  .status-duzy {
+    text-align: center;
+    padding: 30px 20px;
+  }
+
+  .status-duzy .etykieta {
+    color: var(--tekst-przyg);
+    font-size: 0.85rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+  }
+
+  .status-duzy .wynik {
+    font-family: "Shippori Mincho", serif;
+    font-size: 1.7rem;
+    font-weight: 800;
+    margin-top: 10px;
+  }
+
+  .status-duzy .wynik.tak { color: var(--zloto); text-shadow: 0 0 24px rgba(217, 164, 65, 0.4); }
+  .status-duzy .wynik.nie { color: var(--tekst-przyg); }
+
+  .status-duzy .szczegoly { margin-top: 14px; color: var(--sakura); font-size: 1.05rem; }
+  .status-duzy .kiedy { margin-top: 6px; color: var(--tekst-przyg); font-size: 0.85rem; }
+
+  /* ---------- statystyki ---------- */
+  .statystyki {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+  }
+
+  .stat {
+    text-align: center;
+    padding: 16px 8px;
+    background: rgba(245, 239, 226, 0.04);
+    border-radius: 10px;
+  }
+
+  .stat .liczba {
+    font-family: "Shippori Mincho", serif;
+    font-size: 1.9rem;
+    font-weight: 800;
+    color: var(--zloto);
+  }
+
+  .stat .opis { font-size: 0.78rem; color: var(--tekst-przyg); margin-top: 4px; }
+
+  .zart { text-align: center; color: var(--sakura); font-size: 0.88rem; font-style: italic; margin-top: 14px; }
+
+  /* ---------- oś czasu ---------- */
+  h2 { font-size: 1.1rem; margin-bottom: 14px; color: var(--papier); }
+
+  .zdarzenie {
+    display: flex;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px dashed rgba(233, 228, 216, 0.12);
+    font-size: 0.92rem;
+  }
+
+  .zdarzenie:last-child { border-bottom: none; }
+
+  .zdarzenie .ikona { flex: 0 0 auto; width: 1.6em; text-align: center; }
+  .zdarzenie .opis { flex: 1; }
+  .zdarzenie .czas { flex: 0 0 auto; color: var(--tekst-przyg); font-size: 0.8rem; white-space: nowrap; }
+
+  .pasek-akcji {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .pasek-akcji .info { color: var(--tekst-przyg); font-size: 0.8rem; }
+
+  .puste { color: var(--tekst-przyg); text-align: center; padding: 18px 0; }
+
+  @media (max-width: 480px) {
+    .statystyki { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="kontener">
+
+  <header>
+    <div class="kanji">神社管理</div>
+    <div class="romaji">jinja-kanri</div>
+    <h1>Panel Świątyni Przeznaczenia</h1>
+  </header>
+
+  <!-- ---------- LOGOWANIE ---------- -->
+  <div id="widokLogowania">
+    <div class="karta">
+      <p>Podaj hasło strażnika świątyni:</p>
+      <form id="formLogowania">
+        <input type="password" id="poleHasla" autocomplete="current-password" aria-label="Hasło" required>
+        <button type="submit" class="btn-glowny">Wejdź ⛩️</button>
+      </form>
+      <p id="bladLogowania" aria-live="polite"></p>
+    </div>
+  </div>
+
+  <!-- ---------- PANEL ---------- -->
+  <div id="widokPanelu" style="display:none;">
+
+    <div class="pasek-akcji">
+      <span class="info" id="infoOdswiezenia"></span>
+      <button class="btn-glowny" id="btnOdswiez">Odśwież 🔄</button>
+    </div>
+
+    <div class="karta status-duzy" id="kartaStatus"></div>
+
+    <div class="karta">
+      <h2>📊 Statystyki</h2>
+      <div class="statystyki" id="kontenerStatystyk"></div>
+      <p class="zart" id="zartOdmowy"></p>
+    </div>
+
+    <div class="karta">
+      <h2>🕐 Oś czasu</h2>
+      <div id="osCzasu"></div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const KLUCZ_TOKENU = "jinja-token";
+
+const widokLogowania = document.getElementById("widokLogowania");
+const widokPanelu = document.getElementById("widokPanelu");
+const bladLogowania = document.getElementById("bladLogowania");
+
+let timerAutoOdswiezania = null;
+
+/* ---------- logowanie ---------- */
+document.getElementById("formLogowania").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  bladLogowania.textContent = "";
+  const haslo = document.getElementById("poleHasla").value;
+
+  try {
+    const odp = await fetch("/api/admin/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ haslo })
+    });
+    const dane = await odp.json();
+
+    if (dane.ok && dane.token) {
+      sessionStorage.setItem(KLUCZ_TOKENU, dane.token);
+      pokazPanel();
+    } else {
+      bladLogowania.textContent = "Duchy świątyni nie rozpoznają tego hasła. ⛩️";
+    }
+  } catch (err) {
+    bladLogowania.textContent = "Nie udało się połączyć ze świątynią.";
+  }
+});
+
+function pokazPanel() {
+  widokLogowania.style.display = "none";
+  widokPanelu.style.display = "block";
+  wczytajZdarzenia();
+  clearInterval(timerAutoOdswiezania);
+  timerAutoOdswiezania = setInterval(wczytajZdarzenia, 30000);
+}
+
+function wyloguj() {
+  sessionStorage.removeItem(KLUCZ_TOKENU);
+  clearInterval(timerAutoOdswiezania);
+  widokPanelu.style.display = "none";
+  widokLogowania.style.display = "block";
+}
+
+document.getElementById("btnOdswiez").addEventListener("click", wczytajZdarzenia);
+
+/* ---------- pobieranie zdarzeń ---------- */
+async function wczytajZdarzenia() {
+  const token = sessionStorage.getItem(KLUCZ_TOKENU);
+  if (!token) { wyloguj(); return; }
+
+  try {
+    const odp = await fetch("/api/admin/zdarzenia", {
+      headers: { "Authorization": "Bearer " + token }
+    });
+
+    if (odp.status === 401) { wyloguj(); return; }
+
+    const dane = await odp.json();
+    if (dane.ok) {
+      renderuj(dane.zdarzenia);
+      document.getElementById("infoOdswiezenia").textContent =
+        "odświeżono: " + new Date().toLocaleTimeString("pl-PL") + " · auto co 30 s";
+    }
+  } catch (err) {
+    document.getElementById("infoOdswiezenia").textContent = "błąd połączenia — spróbuję ponownie";
+  }
+}
+
+/* ---------- renderowanie ---------- */
+function czasWzgledny(iso) {
+  const t = new Date(iso).getTime();
+  if (!Number.isFinite(t)) return "?";
+  const s = Math.max(0, Math.floor((Date.now() - t) / 1000));
+  if (s < 60) return "przed chwilą";
+  const min = Math.floor(s / 60);
+  if (min < 60) return min + " min temu";
+  const godz = Math.floor(min / 60);
+  if (godz < 24) return godz + " godz. temu";
+  const dni = Math.floor(godz / 24);
+  if (dni === 1) return "wczoraj";
+  return dni + " dni temu";
+}
+
+function opisZdarzenia(z) {
+  if (z.typ === "wizyta") return { ikona: "👣", tekst: "Weszła na stronę" };
+  if (z.typ === "final") {
+    let t = "🎉 WYBRAŁA: " + (z.ema || "?") + ", " + (z.dataSlownie || z.data || "?");
+    if (z.pora) t += ", " + z.pora;
+    return { ikona: "⛩️", tekst: t };
+  }
+  if (z.typ === "etap") {
+    if (z.etap === "proba-odmowy") return { ikona: "🙃", tekst: "Próbowała odrzucić los (próba " + (z.probyOdmowy || "?") + ")" };
+    const nazwy = { 2: "Przeszła przez bramę torii", 3: "Wylosowała omikuji (大吉!)", 4: "Przyjęła przeznaczenie — wybiera emę", 5: "Wybiera dzień przeznaczenia" };
+    return { ikona: "⭐", tekst: nazwy[z.etap] || ("Etap: " + z.etap) };
+  }
+  return { ikona: "❓", tekst: z.typ };
+}
+
+function renderuj(zdarzenia) {
+  /* STATUS */
+  const finaly = zdarzenia.filter(z => z.typ === "final");
+  const kartaStatus = document.getElementById("kartaStatus");
+
+  if (finaly.length > 0) {
+    const f = finaly[0];
+    kartaStatus.innerHTML =
+      '<div class="etykieta">Czy już wybrała?</div>' +
+      '<div class="wynik tak">TAK! 大吉 🎉</div>' +
+      '<div class="szczegoly">' + esc(f.ema || "?") + ' · ' + esc(f.dataSlownie || f.data || "?") +
+      (f.pora ? " · " + esc(f.pora) : "") + '</div>' +
+      '<div class="kiedy">kliknęła ' + czasWzgledny(f.timestamp) + '</div>';
+  } else {
+    const ostatnie = zdarzenia[0];
+    kartaStatus.innerHTML =
+      '<div class="etykieta">Czy już wybrała?</div>' +
+      '<div class="wynik nie">jeszcze nie…</div>' +
+      '<div class="kiedy">' +
+      (ostatnie ? "ostatnia aktywność: " + czasWzgledny(ostatnie.timestamp) : "cisza w świątyni — nikt jeszcze nie wszedł") +
+      '</div>';
+  }
+
+  /* STATYSTYKI */
+  const wizyty = zdarzenia.filter(z => z.typ === "wizyta").length;
+  const etapy = zdarzenia.filter(z => z.typ === "etap" && typeof z.etap === "number").map(z => z.etap);
+  const najdalszy = finaly.length > 0 ? "finał" : (etapy.length > 0 ? "etap " + Math.max(...etapy) : "—");
+  const proby = zdarzenia.filter(z => z.etap === "proba-odmowy");
+  const maxProb = proby.reduce((m, z) => Math.max(m, z.probyOdmowy || 0), 0);
+
+  document.getElementById("kontenerStatystyk").innerHTML =
+    '<div class="stat"><div class="liczba">' + wizyty + '</div><div class="opis">wizyt na stronie</div></div>' +
+    '<div class="stat"><div class="liczba">' + najdalszy + '</div><div class="opis">najdalszy etap</div></div>' +
+    '<div class="stat"><div class="liczba">' + maxProb + '</div><div class="opis">prób „Odrzucam los”</div></div>';
+
+  document.getElementById("zartOdmowy").textContent =
+    maxProb === 0 ? "ani razu nie próbowała odrzucić losu — dobry znak 🌸"
+    : "próbowała odrzucić los " + maxProb + " " + (maxProb === 1 ? "raz" : "razy") + " — przycisk był szybszy 🙃";
+
+  /* OŚ CZASU */
+  const os = document.getElementById("osCzasu");
+  if (zdarzenia.length === 0) {
+    os.innerHTML = '<p class="puste">Brak zdarzeń. Świątynia czeka. ⛩️</p>';
+    return;
+  }
+
+  os.innerHTML = zdarzenia.map(z => {
+    const o = opisZdarzenia(z);
+    return '<div class="zdarzenie">' +
+      '<span class="ikona">' + o.ikona + '</span>' +
+      '<span class="opis">' + esc(o.tekst) + '</span>' +
+      '<span class="czas">' + czasWzgledny(z.timestamp) + '</span>' +
+      '</div>';
+  }).join("");
+}
+
+function esc(s) {
+  return String(s).replace(/[&<>"']/g, c => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+  }[c]));
+}
+
+/* automatyczne wejście, jeśli token już jest w sessionStorage */
+if (sessionStorage.getItem(KLUCZ_TOKENU)) pokazPanel();
+</script>
+</body>
+</html>

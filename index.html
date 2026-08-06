@@ -1,0 +1,1040 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>運命 — Świątynia Przeznaczenia</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700;800&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --noc1: #10131f;
+    --noc2: #1e2436;
+    --noc3: #2b2033;
+    --torii: #c73e3a;
+    --torii-ciemny: #9e2f2c;
+    --sakura: #f6c8d8;
+    --papier: #f5efe2;
+    --zloto: #d9a441;
+    --tekst: #e9e4d8;
+    --tekst-przyg: #a9a294;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html { -webkit-text-size-adjust: 100%; }
+
+  body {
+    min-height: 100vh;
+    min-height: 100dvh;
+    background: linear-gradient(180deg, var(--noc1) 0%, var(--noc2) 55%, var(--noc3) 100%);
+    background-attachment: fixed;
+    color: var(--tekst);
+    font-family: "Zen Kaku Gothic New", sans-serif;
+    overflow-x: hidden;
+    line-height: 1.6;
+  }
+
+  h1, h2, .kanji, .znak {
+    font-family: "Shippori Mincho", serif;
+  }
+
+  /* ---------- Księżyc ---------- */
+  .ksiezyc {
+    position: fixed;
+    top: 6vh;
+    right: 8vw;
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 38% 35%, #fffbe9 0%, #f4e9c8 45%, #e4d3a5 100%);
+    box-shadow:
+      0 0 30px 8px rgba(244, 233, 200, 0.35),
+      0 0 80px 30px rgba(244, 233, 200, 0.15),
+      0 0 160px 60px rgba(244, 233, 200, 0.07);
+    z-index: 1;
+    pointer-events: none;
+  }
+
+  /* ---------- Płatki sakury ---------- */
+  .platki { position: fixed; inset: 0; overflow: hidden; pointer-events: none; z-index: 2; }
+
+  .platek {
+    position: absolute;
+    top: -5vh;
+    width: 12px;
+    height: 12px;
+    background: linear-gradient(135deg, var(--sakura) 0%, #eba7c0 100%);
+    border-radius: 60% 0 60% 0;
+    opacity: 0.8;
+    animation: opadanie linear infinite;
+    will-change: transform;
+  }
+
+  @keyframes opadanie {
+    0%   { transform: translate3d(0, -5vh, 0) rotate(0deg); }
+    25%  { transform: translate3d(var(--dryf1, 30px), 26vh, 0) rotate(160deg); }
+    50%  { transform: translate3d(var(--dryf2, -20px), 52vh, 0) rotate(310deg); }
+    75%  { transform: translate3d(var(--dryf3, 25px), 78vh, 0) rotate(460deg); }
+    100% { transform: translate3d(var(--dryf4, -10px), 108vh, 0) rotate(620deg); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .platek { display: none; }
+    * { animation-duration: 0.001s !important; transition-duration: 0.001s !important; }
+  }
+
+  /* ---------- Układ etapów ---------- */
+  main { position: relative; z-index: 3; }
+
+  .etap {
+    display: none;
+    min-height: 100vh;
+    min-height: 100dvh;
+    padding: 48px 20px 64px;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    max-width: 560px;
+    margin: 0 auto;
+  }
+
+  .etap.aktywny { display: flex; animation: pojawienie 0.9s ease both; }
+
+  @keyframes pojawienie {
+    from { opacity: 0; transform: translateY(24px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .kanji-naglowek {
+    font-size: 2.6rem;
+    letter-spacing: 0.35em;
+    margin-left: 0.35em; /* wyrównanie letter-spacingu */
+    color: var(--sakura);
+    text-shadow: 0 0 24px rgba(246, 200, 216, 0.4);
+  }
+
+  .romaji {
+    color: var(--tekst-przyg);
+    font-size: 0.85rem;
+    letter-spacing: 0.4em;
+    text-transform: lowercase;
+    margin-top: 4px;
+  }
+
+  h1 { font-size: 1.7rem; margin-top: 18px; font-weight: 700; }
+  h2 { font-size: 1.45rem; font-weight: 700; }
+
+  .podtytul {
+    color: var(--tekst-przyg);
+    margin-top: 14px;
+    max-width: 42ch;
+    font-size: 0.98rem;
+  }
+
+  /* ---------- Przyciski ---------- */
+  button {
+    font-family: inherit;
+    font-size: 1rem;
+    cursor: pointer;
+    border: none;
+    border-radius: 10px;
+    transition: transform 0.25s ease, box-shadow 0.25s ease, opacity 0.3s ease;
+  }
+
+  button:focus-visible {
+    outline: 3px solid var(--zloto);
+    outline-offset: 3px;
+  }
+
+  .btn-glowny {
+    background: linear-gradient(135deg, var(--torii) 0%, var(--torii-ciemny) 100%);
+    color: #fff7ef;
+    font-weight: 700;
+    padding: 14px 28px;
+    box-shadow: 0 6px 22px rgba(199, 62, 58, 0.4);
+    letter-spacing: 0.02em;
+  }
+
+  .btn-glowny:hover { transform: translateY(-2px); box-shadow: 0 10px 28px rgba(199, 62, 58, 0.55); }
+
+  .btn-ghost {
+    background: transparent;
+    color: var(--tekst-przyg);
+    border: 1px solid rgba(233, 228, 216, 0.3);
+    padding: 13px 24px;
+  }
+
+  /* ================= ETAP 1: TORII ================= */
+  .torii-svg {
+    margin-top: 36px;
+    width: min(280px, 78vw);
+    height: auto;
+    cursor: pointer;
+    filter: drop-shadow(0 0 26px rgba(199, 62, 58, 0.35));
+    transition: transform 0.4s ease, filter 0.4s ease;
+    background: none;
+    border: none;
+    padding: 0;
+    border-radius: 12px;
+  }
+
+  .torii-svg:hover {
+    transform: scale(1.04);
+    filter: drop-shadow(0 0 40px rgba(199, 62, 58, 0.6));
+  }
+
+  .hint {
+    margin-top: 26px;
+    color: var(--zloto);
+    font-size: 0.9rem;
+    letter-spacing: 0.08em;
+    animation: puls 2.2s ease-in-out infinite;
+  }
+
+  @keyframes puls {
+    0%, 100% { opacity: 0.45; }
+    50% { opacity: 1; }
+  }
+
+  /* ================= ETAP 2: OMIKUJI ================= */
+  .pudelko-scena {
+    margin-top: 42px;
+    position: relative;
+    width: 120px;
+    height: 220px;
+  }
+
+  .patyczek {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    top: 6px;
+    width: 14px;
+    height: 0;
+    background: linear-gradient(180deg, var(--papier) 0%, #e0d5bc 100%);
+    border-radius: 4px 4px 0 0;
+    transition: height 0.9s cubic-bezier(0.34, 1.4, 0.64, 1), top 0.9s cubic-bezier(0.34, 1.4, 0.64, 1);
+    box-shadow: 0 0 12px rgba(245, 239, 226, 0.4);
+  }
+
+  .patyczek.wysuniety { height: 90px; top: -78px; }
+
+  .pudelko {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 120px;
+    height: 170px;
+    background: linear-gradient(160deg, #7a5232 0%, #5c3b22 45%, #462c18 100%);
+    border-radius: 8px;
+    border: 2px solid #3a2413;
+    box-shadow:
+      inset 0 2px 6px rgba(255, 220, 170, 0.18),
+      inset 0 -8px 16px rgba(0, 0, 0, 0.45),
+      0 10px 30px rgba(0, 0, 0, 0.5);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+  }
+
+  .pudelko::before {
+    content: "";
+    position: absolute;
+    top: -8px;
+    left: -4px;
+    right: -4px;
+    height: 18px;
+    background: linear-gradient(180deg, #6a4629 0%, #4c3018 100%);
+    border-radius: 6px;
+    border: 2px solid #3a2413;
+  }
+
+  .pudelko::after {
+    content: "";
+    position: absolute;
+    top: -4px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 22px;
+    height: 8px;
+    background: #241609;
+    border-radius: 3px;
+  }
+
+  .pudelko .napis-pion {
+    writing-mode: vertical-rl;
+    font-family: "Shippori Mincho", serif;
+    font-size: 1.5rem;
+    color: var(--zloto);
+    letter-spacing: 0.3em;
+    text-shadow: 0 0 8px rgba(217, 164, 65, 0.5);
+    font-weight: 700;
+  }
+
+  .pudelko.trzesie { animation: trzesienie 0.55s ease; }
+
+  @keyframes trzesienie {
+    0%   { transform: rotate(0deg)  translate(0, 0); }
+    15%  { transform: rotate(-7deg) translate(-5px, -3px); }
+    30%  { transform: rotate(6deg)  translate(5px, 2px); }
+    45%  { transform: rotate(-5deg) translate(-4px, -2px); }
+    60%  { transform: rotate(4deg)  translate(4px, 1px); }
+    75%  { transform: rotate(-2deg) translate(-2px, 0); }
+    100% { transform: rotate(0deg)  translate(0, 0); }
+  }
+
+  .licznik-potrzasniec {
+    margin-top: 26px;
+    color: var(--zloto);
+    font-size: 0.95rem;
+    min-height: 1.6em;
+    letter-spacing: 0.05em;
+  }
+
+  /* ================= ETAP 3: ZWÓJ ================= */
+  .zwoj {
+    margin-top: 34px;
+    position: relative;
+    background: linear-gradient(175deg, #faf5e8 0%, var(--papier) 40%, #ece2cc 100%);
+    color: #3c2f26;
+    width: min(420px, 92vw);
+    padding: 44px 26px 46px;
+    border-radius: 4px;
+    box-shadow: 0 14px 44px rgba(0, 0, 0, 0.55);
+  }
+
+  .zwoj::before, .zwoj::after {
+    content: "";
+    position: absolute;
+    left: -12px;
+    right: -12px;
+    height: 22px;
+    background: linear-gradient(180deg, #d05450 0%, var(--torii-ciemny) 55%, #7c2422 100%);
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  }
+
+  .zwoj::before { top: -12px; }
+  .zwoj::after { bottom: -12px; }
+
+  .znak-wielki {
+    font-size: 4.2rem;
+    color: var(--torii);
+    font-weight: 800;
+    line-height: 1.15;
+    text-shadow: 0 2px 0 rgba(158, 47, 44, 0.25);
+  }
+
+  .znak-podpis {
+    color: #8a7a63;
+    font-size: 0.9rem;
+    letter-spacing: 0.25em;
+    margin-top: 4px;
+  }
+
+  .wers {
+    margin-top: 22px;
+    text-align: left;
+    border-top: 1px dashed rgba(60, 47, 38, 0.25);
+    padding-top: 16px;
+  }
+
+  .wers:first-of-type { margin-top: 28px; }
+
+  .wers .kanji-maly {
+    font-family: "Shippori Mincho", serif;
+    color: var(--torii);
+    font-weight: 700;
+    font-size: 1.15rem;
+    margin-right: 8px;
+  }
+
+  .wers .etykieta {
+    font-size: 0.8rem;
+    color: #8a7a63;
+    letter-spacing: 0.15em;
+  }
+
+  .wers p { margin-top: 4px; font-size: 0.95rem; }
+
+  .final-wrozby {
+    margin-top: 28px;
+    font-weight: 700;
+    color: #5a2320;
+    font-size: 1rem;
+    border-top: 2px solid rgba(199, 62, 58, 0.3);
+    padding-top: 20px;
+  }
+
+  .przyciski-losu {
+    position: relative;
+    margin-top: 36px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    min-height: 130px;
+  }
+
+  #btnPrzyjmij { transition: transform 0.35s cubic-bezier(0.34, 1.5, 0.64, 1), box-shadow 0.3s ease; }
+
+  #btnOdrzuc {
+    position: relative;
+    transition: transform 0.3s ease, opacity 0.5s ease;
+    touch-action: manipulation;
+  }
+
+  #btnOdrzuc.znikl { opacity: 0; pointer-events: none; }
+
+  .komentarz-losu {
+    width: 100%;
+    min-height: 2em;
+    margin-top: 10px;
+    color: var(--sakura);
+    font-size: 0.92rem;
+    font-style: italic;
+  }
+
+  /* ================= ETAP 4: EMA ================= */
+  .tabliczki {
+    margin-top: 38px;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(130px, 160px));
+    gap: 18px;
+    justify-content: center;
+  }
+
+  .ema {
+    clip-path: polygon(50% 0%, 100% 26%, 100% 100%, 0% 100%, 0% 26%);
+    background: linear-gradient(165deg, #b98d5c 0%, #96683c 45%, #7a5230 100%);
+    border: none;
+    width: 100%;
+    aspect-ratio: 10 / 11;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding-top: 18px;
+    color: #2e1d0e;
+    position: relative;
+    box-shadow: inset 0 0 0 3px rgba(46, 29, 14, 0.25);
+  }
+
+  .ema::before {
+    content: "";
+    position: absolute;
+    top: 12%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: #2e1d0e;
+    box-shadow: inset 0 1px 2px rgba(255,255,255,0.25);
+  }
+
+  .ema .znak {
+    font-size: 2rem;
+    font-weight: 800;
+    color: #40260f;
+    text-shadow: 0 1px 0 rgba(255, 235, 200, 0.35);
+  }
+
+  .ema .nazwa {
+    font-size: 0.9rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+  }
+
+  .ema:hover { transform: translateY(-4px); }
+
+  .ema.wybrana {
+    box-shadow:
+      inset 0 0 0 3px var(--zloto),
+      inset 0 0 18px rgba(217, 164, 65, 0.45);
+    transform: translateY(-4px);
+  }
+
+  #btnDalejEma { margin-top: 34px; }
+
+  /* ================= ETAP 5: KALENDARZ ================= */
+  .kalendarz {
+    margin-top: 34px;
+    width: min(400px, 94vw);
+    background: rgba(16, 19, 31, 0.55);
+    border: 1px solid rgba(217, 164, 65, 0.25);
+    border-radius: 14px;
+    padding: 18px 14px 20px;
+    backdrop-filter: blur(4px);
+  }
+
+  .kalendarz-naglowek {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+  }
+
+  .kalendarz-naglowek .miesiac {
+    font-family: "Shippori Mincho", serif;
+    font-weight: 700;
+    font-size: 1.05rem;
+    color: var(--papier);
+    letter-spacing: 0.04em;
+    text-transform: capitalize;
+  }
+
+  .strzalka {
+    background: transparent;
+    color: var(--zloto);
+    font-size: 1.5rem;
+    width: 42px;
+    height: 42px;
+    line-height: 1;
+    border-radius: 50%;
+  }
+
+  .strzalka:hover:not(:disabled) { background: rgba(217, 164, 65, 0.15); }
+  .strzalka:disabled { opacity: 0.25; cursor: default; }
+
+  .kalendarz-siatka {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+  }
+
+  .dzien-tygodnia {
+    font-size: 0.72rem;
+    color: var(--tekst-przyg);
+    letter-spacing: 0.05em;
+    padding: 6px 0;
+    font-weight: 700;
+  }
+
+  .dzien {
+    background: transparent;
+    color: var(--tekst);
+    aspect-ratio: 1;
+    border-radius: 50%;
+    font-size: 0.95rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid transparent;
+    padding: 0;
+  }
+
+  .dzien:hover:not(:disabled):not(.wybrany) { border-color: var(--zloto); }
+
+  .dzien:disabled { color: rgba(169, 162, 148, 0.3); cursor: default; }
+
+  .dzien.pusty { visibility: hidden; }
+
+  .dzien.dzisiaj { color: var(--zloto); font-weight: 700; }
+
+  .dzien.wybrany {
+    background: radial-gradient(circle at 40% 35%, #d85450 0%, var(--torii) 55%, var(--torii-ciemny) 100%);
+    color: #fff;
+    font-weight: 700;
+    box-shadow: 0 0 16px rgba(199, 62, 58, 0.6);
+    border-color: transparent;
+  }
+
+  .pory {
+    margin-top: 22px;
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .pora {
+    background: rgba(16, 19, 31, 0.55);
+    color: var(--tekst);
+    border: 2px solid rgba(233, 228, 216, 0.2);
+    padding: 10px 16px;
+    border-radius: 999px;
+    font-size: 0.9rem;
+  }
+
+  .pora.wybrana {
+    border-color: var(--zloto);
+    box-shadow: 0 0 14px rgba(217, 164, 65, 0.35);
+    color: var(--zloto);
+  }
+
+  #btnPieczec { margin-top: 32px; display: none; }
+  #btnPieczec.widoczny { display: inline-block; animation: pojawienie 0.6s ease both; }
+
+  /* ---------- Finał ---------- */
+  .final-karta {
+    margin-top: 36px;
+    background: linear-gradient(175deg, #faf5e8 0%, var(--papier) 100%);
+    color: #3c2f26;
+    padding: 36px 26px;
+    border-radius: 6px;
+    width: min(420px, 92vw);
+    box-shadow: 0 14px 44px rgba(0, 0, 0, 0.55);
+    position: relative;
+  }
+
+  .final-karta::after {
+    content: "印";
+    position: absolute;
+    bottom: 14px;
+    right: 16px;
+    width: 44px;
+    height: 44px;
+    border: 3px solid var(--torii);
+    border-radius: 8px;
+    color: var(--torii);
+    font-family: "Shippori Mincho", serif;
+    font-weight: 800;
+    font-size: 1.4rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transform: rotate(-8deg);
+    opacity: 0.85;
+  }
+
+  .final-karta .kanji-final {
+    font-family: "Shippori Mincho", serif;
+    font-size: 2.2rem;
+    color: var(--torii);
+    font-weight: 800;
+  }
+
+  .final-karta p { margin-top: 16px; font-size: 1rem; }
+
+  .final-karta .podpis {
+    margin-top: 22px;
+    font-family: "Shippori Mincho", serif;
+    font-weight: 700;
+    color: #5a2320;
+  }
+</style>
+</head>
+<body>
+
+<div class="ksiezyc" aria-hidden="true"></div>
+<div class="platki" id="platki" aria-hidden="true"></div>
+
+<main>
+
+  <!-- ============ ETAP 1: BRAMA TORII ============ -->
+  <section class="etap aktywny" id="etap1" aria-label="Brama torii">
+    <div class="kanji-naglowek">運命</div>
+    <div class="romaji">un-mei</div>
+    <h1>Świątynia Przeznaczenia</h1>
+    <p class="podtytul">Podobno kto przejdzie przez tę bramę, pozna swoją wróżbę na najbliższy tydzień.</p>
+
+    <button class="torii-svg" id="btnTorii" aria-label="Przejdź przez bramę torii">
+      <svg viewBox="0 0 280 240" xmlns="http://www.w3.org/2000/svg" role="img" aria-hidden="true">
+        <!-- górna belka (kasagi) -->
+        <path d="M10 38 Q140 14 270 38 L270 56 Q140 34 10 56 Z" fill="#c73e3a" stroke="#8f2b28" stroke-width="3"/>
+        <!-- druga belka (nuki) -->
+        <rect x="34" y="82" width="212" height="16" rx="3" fill="#c73e3a" stroke="#8f2b28" stroke-width="3"/>
+        <!-- tabliczka -->
+        <rect x="122" y="52" width="36" height="44" rx="3" fill="#f5efe2" stroke="#8f2b28" stroke-width="2.5"/>
+        <text x="140" y="83" text-anchor="middle" font-family="Shippori Mincho, serif" font-size="24" fill="#9e2f2c" font-weight="700">神</text>
+        <!-- filary -->
+        <path d="M56 50 L50 232 L78 232 L74 50 Z" fill="#c73e3a" stroke="#8f2b28" stroke-width="3"/>
+        <path d="M206 50 L206 232 L234 232 L224 50 Z" fill="#c73e3a" stroke="#8f2b28" stroke-width="3"/>
+        <!-- podstawy -->
+        <rect x="42" y="228" width="44" height="10" rx="2" fill="#2b1c12"/>
+        <rect x="198" y="228" width="44" height="10" rx="2" fill="#2b1c12"/>
+      </svg>
+    </button>
+
+    <p class="hint">⛩️ kliknij bramę, żeby wejść</p>
+  </section>
+
+  <!-- ============ ETAP 2: OMIKUJI ============ -->
+  <section class="etap" id="etap2" aria-label="Losowanie omikuji">
+    <div class="kanji-naglowek" style="font-size:1.9rem;">御神籤</div>
+    <div class="romaji">o-mikuji</div>
+    <h2 style="margin-top:16px;">Wylosuj swoją wróżbę</h2>
+    <p class="podtytul">Potrząśnij pudełkiem trzy razy, a los sam wybierze patyczek.</p>
+
+    <div class="pudelko-scena">
+      <div class="patyczek" id="patyczek"></div>
+      <button class="pudelko" id="pudelko" aria-label="Potrząśnij pudełkiem omikuji">
+        <span class="napis-pion" aria-hidden="true">御神籤</span>
+      </button>
+    </div>
+
+    <p class="licznik-potrzasniec" id="licznikPotrzasniec">potrząśnij pudełkiem…</p>
+  </section>
+
+  <!-- ============ ETAP 3: ZWÓJ Z WRÓŻBĄ ============ -->
+  <section class="etap" id="etap3" aria-label="Twoja wróżba">
+    <div class="zwoj">
+      <div class="znak-wielki">大吉</div>
+      <div class="znak-podpis">dai-kichi · wielkie szczęście</div>
+
+      <div class="wers">
+        <span class="kanji-maly">恋</span><span class="etykieta">koi — Miłość</span>
+        <p>ktoś zbudował dla Ciebie całą świątynię w internecie. To dobry znak.</p>
+      </div>
+      <div class="wers">
+        <span class="kanji-maly">旅</span><span class="etykieta">tabi — Podróż</span>
+        <p>krótka wyprawa w towarzystwie pewnej osoby przyniesie szczęście.</p>
+      </div>
+      <div class="wers">
+        <span class="kanji-maly">食</span><span class="etykieta">shoku — Jedzenie</span>
+        <p>coś pysznego czeka, ale tylko we dwoje.</p>
+      </div>
+
+      <p class="final-wrozby">Wróżba mówi jasno: randka ze mną jest zapisana w gwiazdach. Z losem się nie dyskutuje. 🌸</p>
+    </div>
+
+    <div class="przyciski-losu" id="przyciskiLosu">
+      <button class="btn-glowny" id="btnPrzyjmij">Przyjmuję przeznaczenie ⛩️</button>
+      <button class="btn-ghost" id="btnOdrzuc">Odrzucam los</button>
+      <p class="komentarz-losu" id="komentarzLosu" aria-live="polite"></p>
+    </div>
+  </section>
+
+  <!-- ============ ETAP 4: TABLICZKI EMA ============ -->
+  <section class="etap" id="etap4" aria-label="Tabliczki ema">
+    <div class="kanji-naglowek" style="font-size:1.9rem;">絵馬</div>
+    <div class="romaji">e-ma</div>
+    <h2 style="margin-top:16px;">Zawieś swoje życzenie</h2>
+    <p class="podtytul">W świątyniach życzenia pisze się na drewnianych tabliczkach ema. Wybierz, jak ma wyglądać nasze przeznaczenie:</p>
+
+    <div class="tabliczki" role="group" aria-label="Wybór tabliczki ema">
+      <button class="ema" data-ema="Ramen"><span class="znak">麺</span><span class="nazwa">Ramen</span></button>
+      <button class="ema" data-ema="Kino"><span class="znak">映</span><span class="nazwa">Kino</span></button>
+      <button class="ema" data-ema="Spacer"><span class="znak">星</span><span class="nazwa">Spacer</span></button>
+      <button class="ema" data-ema="Matcha"><span class="znak">茶</span><span class="nazwa">Matcha</span></button>
+    </div>
+
+    <button class="btn-glowny" id="btnDalejEma" style="display:none;">Dalej ⛩️</button>
+  </section>
+
+  <!-- ============ ETAP 5: KALENDARZ ============ -->
+  <section class="etap" id="etap5" aria-label="Wybór dnia">
+    <div class="kanji-naglowek" style="font-size:1.9rem;">日取り</div>
+    <div class="romaji">hi-dori</div>
+    <h2 style="margin-top:16px;">Wybierz dzień przeznaczenia</h2>
+
+    <div class="kalendarz" id="sekcjaKalendarz">
+      <div class="kalendarz-naglowek">
+        <button class="strzalka" id="btnPoprzedni" aria-label="Poprzedni miesiąc">‹</button>
+        <div class="miesiac" id="naglowekMiesiaca"></div>
+        <button class="strzalka" id="btnNastepny" aria-label="Następny miesiąc">›</button>
+      </div>
+      <div class="kalendarz-siatka" id="siatkaKalendarza"></div>
+    </div>
+
+    <div class="pory" role="group" aria-label="Pora dnia (opcjonalnie)">
+      <button class="pora" data-pora="przed południem">☕ przed południem</button>
+      <button class="pora" data-pora="po południu">🌸 po południu</button>
+      <button class="pora" data-pora="wieczorem">🌙 wieczorem</button>
+    </div>
+
+    <button class="btn-glowny" id="btnPieczec">Przypieczętuj los ⛩️</button>
+
+    <div class="final-karta" id="finalKarta" style="display:none;">
+      <div class="kanji-final">大吉</div>
+      <p id="finalTekst"></p>
+      <p>Napisz mi <strong>大吉</strong> i uznaję sprawę za przypieczętowaną. よろしくね。</p>
+      <p class="podpis" id="finalPodpis"></p>
+    </div>
+  </section>
+
+</main>
+
+<script>
+/* ============================================================
+   PERSONALIZACJA — wpisz tutaj swoje imię:
+   ============================================================ */
+const TWOJE_IMIE = "Paweł";
+/* ============================================================ */
+
+const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+/* ---------- wysyłanie zdarzeń (błędy ignorowane po cichu) ---------- */
+function wyslijZdarzenie(dane) {
+  try {
+    fetch("/api/odpowiedz", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        ...dane,
+        timestamp: new Date().toISOString(),
+        userAgent: navigator.userAgent
+      })
+    }).catch(() => {});
+  } catch (e) { /* strona ma działać także bez backendu */ }
+}
+
+wyslijZdarzenie({ typ: "wizyta" });
+
+/* ---------- płatki sakury ---------- */
+const kontenerPlatkow = document.getElementById("platki");
+
+function stworzPlatek(szybki) {
+  const p = document.createElement("div");
+  p.className = "platek";
+  const rozmiar = 8 + Math.random() * 8;
+  p.style.width = rozmiar + "px";
+  p.style.height = rozmiar + "px";
+  p.style.left = Math.random() * 100 + "vw";
+  p.style.opacity = (0.5 + Math.random() * 0.4).toFixed(2);
+  const czas = szybki ? 2.5 + Math.random() * 2.5 : 8 + Math.random() * 9;
+  p.style.animationDuration = czas + "s";
+  p.style.animationDelay = (szybki ? Math.random() * 1.5 : Math.random() * -15) + "s";
+  for (let i = 1; i <= 4; i++) {
+    p.style.setProperty("--dryf" + i, ((Math.random() - 0.5) * 90).toFixed(0) + "px");
+  }
+  kontenerPlatkow.appendChild(p);
+  return p;
+}
+
+if (!reducedMotion) {
+  for (let i = 0; i < 25; i++) stworzPlatek(false);
+}
+
+function deszczSakury() {
+  if (reducedMotion) return;
+  for (let i = 0; i < 60; i++) {
+    const p = stworzPlatek(true);
+    setTimeout(() => p.remove(), 9000);
+  }
+}
+
+/* ---------- przechodzenie etapów ---------- */
+function pokazEtap(numer) {
+  document.querySelectorAll(".etap").forEach(s => s.classList.remove("aktywny"));
+  const cel = document.getElementById("etap" + numer);
+  cel.classList.add("aktywny");
+  window.scrollTo({ top: 0, behavior: reducedMotion ? "auto" : "smooth" });
+  wyslijZdarzenie({ typ: "etap", etap: numer });
+}
+
+/* ============ ETAP 1: torii ============ */
+document.getElementById("btnTorii").addEventListener("click", () => pokazEtap(2));
+
+/* ============ ETAP 2: omikuji ============ */
+const pudelko = document.getElementById("pudelko");
+const patyczek = document.getElementById("patyczek");
+const licznikEl = document.getElementById("licznikPotrzasniec");
+let potrzasniecia = 0;
+
+pudelko.addEventListener("click", () => {
+  if (potrzasniecia >= 3) return;
+  potrzasniecia++;
+
+  pudelko.classList.remove("trzesie");
+  void pudelko.offsetWidth; /* restart animacji */
+  pudelko.classList.add("trzesie");
+
+  if (potrzasniecia < 3) {
+    licznikEl.textContent = "(" + potrzasniecia + "/3)… coś grzechocze w środku";
+  } else {
+    licznikEl.textContent = "(3/3) los został wybrany!";
+    setTimeout(() => patyczek.classList.add("wysuniety"), 500);
+    setTimeout(() => pokazEtap(3), 2100);
+  }
+});
+
+/* ============ ETAP 3: uciekający przycisk ============ */
+const btnOdrzuc = document.getElementById("btnOdrzuc");
+const btnPrzyjmij = document.getElementById("btnPrzyjmij");
+const komentarzEl = document.getElementById("komentarzLosu");
+
+const KOMENTARZE = [
+  "Losu się nie odrzuca. 🙃",
+  "Duchy świątyni mówią: nie.",
+  "Ten przycisk jest przeklęty.",
+  "大吉 to 大吉. Koniec dyskusji.",
+  "Nawet płatki sakury się śmieją.",
+  "Dobra, on już nie wróci. Zostało jedno wyjście."
+];
+
+let probyOdmowy = 0;
+
+function ucieczka() {
+  if (probyOdmowy >= KOMENTARZE.length) return;
+  probyOdmowy++;
+
+  komentarzEl.textContent = KOMENTARZE[probyOdmowy - 1];
+  btnPrzyjmij.style.transform = "scale(" + (1 + probyOdmowy * 0.09) + ")";
+
+  wyslijZdarzenie({ typ: "etap", etap: "proba-odmowy", probyOdmowy });
+
+  if (probyOdmowy >= KOMENTARZE.length) {
+    btnOdrzuc.classList.add("znikl");
+    return;
+  }
+
+  /* przesunięcie w granicach viewportu */
+  const rect = btnOdrzuc.getBoundingClientRect();
+  const maxX = window.innerWidth - rect.width - 16;
+  const maxY = window.innerHeight - rect.height - 16;
+  const celX = 16 + Math.random() * Math.max(1, maxX - 16);
+  const celY = Math.max(80, Math.min(maxY, rect.top + (Math.random() - 0.5) * 300));
+  const dx = celX - rect.left;
+  const dy = celY - rect.top;
+  const rot = (Math.random() - 0.5) * 30;
+  btnOdrzuc.style.transform = "translate(" + dx.toFixed(0) + "px," + dy.toFixed(0) + "px) rotate(" + rot.toFixed(0) + "deg)";
+}
+
+btnOdrzuc.addEventListener("mouseenter", ucieczka);
+btnOdrzuc.addEventListener("touchstart", (e) => { e.preventDefault(); ucieczka(); }, { passive: false });
+btnOdrzuc.addEventListener("click", (e) => { e.preventDefault(); ucieczka(); });
+
+btnPrzyjmij.addEventListener("click", () => pokazEtap(4));
+
+/* ============ ETAP 4: ema ============ */
+let wybranaEma = null;
+const btnDalejEma = document.getElementById("btnDalejEma");
+
+document.querySelectorAll(".ema").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".ema").forEach(b => b.classList.remove("wybrana"));
+    btn.classList.add("wybrana");
+    wybranaEma = btn.dataset.ema;
+    btnDalejEma.style.display = "inline-block";
+  });
+});
+
+btnDalejEma.addEventListener("click", () => pokazEtap(5));
+
+/* ============ ETAP 5: kalendarz ============ */
+const naglowekMiesiaca = document.getElementById("naglowekMiesiaca");
+const siatka = document.getElementById("siatkaKalendarza");
+const btnPoprzedni = document.getElementById("btnPoprzedni");
+const btnNastepny = document.getElementById("btnNastepny");
+const btnPieczec = document.getElementById("btnPieczec");
+
+const DNI_TYGODNIA = ["Pn", "Wt", "Śr", "Cz", "Pt", "So", "Nd"];
+const dzis = new Date();
+dzis.setHours(0, 0, 0, 0);
+
+let widocznyRok = dzis.getFullYear();
+let widocznyMiesiac = dzis.getMonth();
+let wybranaData = null;
+let wybranaPora = null;
+
+function rysujKalendarz() {
+  const fmtMiesiac = new Intl.DateTimeFormat("pl-PL", { month: "long", year: "numeric" });
+  naglowekMiesiaca.textContent = fmtMiesiac.format(new Date(widocznyRok, widocznyMiesiac, 1));
+
+  /* nie cofamy się przed bieżący miesiąc */
+  btnPoprzedni.disabled = widocznyRok === dzis.getFullYear() && widocznyMiesiac === dzis.getMonth();
+
+  siatka.innerHTML = "";
+  DNI_TYGODNIA.forEach(d => {
+    const el = document.createElement("div");
+    el.className = "dzien-tygodnia";
+    el.textContent = d;
+    siatka.appendChild(el);
+  });
+
+  const pierwszy = new Date(widocznyRok, widocznyMiesiac, 1);
+  const przesuniecie = (pierwszy.getDay() + 6) % 7; /* poniedziałek = 0 */
+  const dniWMiesiacu = new Date(widocznyRok, widocznyMiesiac + 1, 0).getDate();
+
+  for (let i = 0; i < przesuniecie; i++) {
+    const pusty = document.createElement("button");
+    pusty.className = "dzien pusty";
+    pusty.disabled = true;
+    pusty.tabIndex = -1;
+    siatka.appendChild(pusty);
+  }
+
+  for (let d = 1; d <= dniWMiesiacu; d++) {
+    const data = new Date(widocznyRok, widocznyMiesiac, d);
+    const btn = document.createElement("button");
+    btn.className = "dzien";
+    btn.textContent = d;
+
+    if (data < dzis) {
+      btn.disabled = true;
+    } else {
+      if (data.getTime() === dzis.getTime()) btn.classList.add("dzisiaj");
+      if (wybranaData && data.getTime() === wybranaData.getTime()) btn.classList.add("wybrany");
+      btn.addEventListener("click", () => {
+        wybranaData = data;
+        rysujKalendarz();
+        btnPieczec.classList.add("widoczny");
+      });
+    }
+    siatka.appendChild(btn);
+  }
+}
+
+btnPoprzedni.addEventListener("click", () => {
+  widocznyMiesiac--;
+  if (widocznyMiesiac < 0) { widocznyMiesiac = 11; widocznyRok--; }
+  rysujKalendarz();
+});
+
+btnNastepny.addEventListener("click", () => {
+  widocznyMiesiac++;
+  if (widocznyMiesiac > 11) { widocznyMiesiac = 0; widocznyRok++; }
+  rysujKalendarz();
+});
+
+document.querySelectorAll(".pora").forEach(btn => {
+  btn.addEventListener("click", () => {
+    if (btn.classList.contains("wybrana")) {
+      btn.classList.remove("wybrana");
+      wybranaPora = null;
+    } else {
+      document.querySelectorAll(".pora").forEach(b => b.classList.remove("wybrana"));
+      btn.classList.add("wybrana");
+      wybranaPora = btn.dataset.pora;
+    }
+  });
+});
+
+rysujKalendarz();
+
+/* ---------- finał ---------- */
+btnPieczec.addEventListener("click", () => {
+  if (!wybranaData) return;
+
+  const fmt = new Intl.DateTimeFormat("pl-PL", { weekday: "long", day: "numeric", month: "long" });
+  const dataSlownie = fmt.format(wybranaData);
+
+  let tekst = "Życzenie zawieszone: " + (wybranaEma || "randka") + ", " + dataSlownie;
+  if (wybranaPora) tekst += ", " + wybranaPora;
+  tekst += ".";
+
+  document.getElementById("finalTekst").textContent = tekst;
+  document.getElementById("finalPodpis").textContent = "— " + TWOJE_IMIE;
+
+  document.getElementById("sekcjaKalendarz").style.display = "none";
+  document.querySelector(".pory").style.display = "none";
+  btnPieczec.style.display = "none";
+  document.getElementById("finalKarta").style.display = "block";
+
+  deszczSakury();
+
+  wyslijZdarzenie({
+    typ: "final",
+    ema: wybranaEma,
+    data: wybranaData.getFullYear() + "-" +
+          String(wybranaData.getMonth() + 1).padStart(2, "0") + "-" +
+          String(wybranaData.getDate()).padStart(2, "0"),
+    dataSlownie: dataSlownie,
+    pora: wybranaPora,
+    probyOdmowy: probyOdmowy
+  });
+});
+</script>
+</body>
+</html>
