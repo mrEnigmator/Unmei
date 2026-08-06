@@ -28,13 +28,68 @@ fs.mkdirSync(DATA_DIR, { recursive: true });
 
 /* ---------- pomocnicze ---------- */
 
+/* dla HTML bez X-Frame DENY nie ma potrzeby robić wyjątku — strona nie ma być osadzana */
+const NAGLOWKI_BEZPIECZENSTWA_HTML = {
+  "X-Content-Type-Options": "nosniff",
+  "X-Frame-Options": "DENY",
+  "Referrer-Policy": "no-referrer",
+};
+
+const NAGLOWKI_BEZPIECZENSTWA = {
+  "X-Content-Type-Options": "nosniff",
+  "X-Frame-Options": "DENY",
+  "Referrer-Policy": "no-referrer",
+  "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+};
+
 function json(res, obj, status = 200) {
   const cialo = JSON.stringify(obj);
   res.writeHead(status, {
     "Content-Type": "application/json; charset=utf-8",
     "Cache-Control": "no-store",
+    ...NAGLOWKI_BEZPIECZENSTWA,
   });
   res.end(cialo);
+}
+
+/* ---------- limit prób (anty-brute-force) ----------
+   Na IP: max 10 nieudanych prób hasła w oknie 15 minut,
+   po przekroczeniu — blokada do końca okna. */
+
+const OKNO_LIMITU_MS = 15 * 60 * 1000;
+const MAX_PROB = 10;
+const licznikProb = new Map(); /* ip -> { liczba, resetO } */
+
+function ipKlienta(req) {
+  const xff = req.headers["x-forwarded-for"];
+  if (xff) return String(xff).split(",")[0].trim();
+  return req.socket.remoteAddress || "?";
+}
+
+function zablokowany(req) {
+  const wpis = licznikProb.get(ipKlienta(req));
+  if (!wpis) return false;
+  if (Date.now() > wpis.resetO) { licznikProb.delete(ipKlienta(req)); return false; }
+  return wpis.liczba >= MAX_PROB;
+}
+
+function zanotujNieudanaProbe(req) {
+  const ip = ipKlienta(req);
+  const teraz = Date.now();
+  const wpis = licznikProb.get(ip);
+  if (!wpis || teraz > wpis.resetO) {
+    licznikProb.set(ip, { liczba: 1, resetO: teraz + OKNO_LIMITU_MS });
+  } else {
+    wpis.liczba++;
+  }
+  /* sprzątanie starych wpisów przy okazji */
+  if (licznikProb.size > 5000) {
+    for (const [k, w] of licznikProb) if (teraz > w.resetO) licznikProb.delete(k);
+  }
+}
+
+function zaDuzoProb(res) {
+  json(res, { ok: false, blad: "Za dużo prób — spróbuj za kwadrans" }, 429);
 }
 
 function wczytajCialo(req, limit = 64 * 1024) {
@@ -112,6 +167,7 @@ async function apiLogin(req, res) {
   if (!ADMIN_HASLO) {
     return json(res, { ok: false, blad: "Brak skonfigurowanego sekretu ADMIN_HASLO" }, 500);
   }
+  if (zablokowany(req)) return zaDuzoProb(res);
 
   let dane;
   try {
@@ -122,6 +178,7 @@ async function apiLogin(req, res) {
 
   const haslo = typeof dane?.haslo === "string" ? dane.haslo : "";
   if (!bezpiecznePorownanie(haslo, ADMIN_HASLO)) {
+    zanotujNieudanaProbe(req);
     return json(res, { ok: false, blad: "Nieprawidłowe hasło" }, 401);
   }
 
@@ -192,6 +249,7 @@ async function apiBramaStatus(url, res) {
 }
 
 async function apiBramaOtworz(req, res) {
+  if (zablokowany(req)) return zaDuzoProb(res);
   const goscie = await wczytajGosci();
   if (goscie.length === 0) return json(res, { ok: true, gosc: null }); /* brama wyłączona */
 
@@ -208,6 +266,7 @@ async function apiBramaOtworz(req, res) {
       return json(res, { ok: true, gosc: { id: g.id, imie: g.imie, jezyk: g.jezyk || "pl" } });
     }
   }
+  zanotujNieudanaProbe(req);
   json(res, { ok: false, blad: "Duchy nie znają tego słowa" }, 401);
 }
 
@@ -340,12 +399,17 @@ async function apiWyczyscDaneGoscia(req, res, url) {
 
   /* dodatkowe potwierdzenie: hasło administratora wpisane jeszcze raz */
   const haslo = typeof dane?.haslo === "string" ? dane.haslo : "";
+  if (zablokowany(req)) return zaDuzoProb(res);
   if (!(await bezpiecznePorownanie(haslo, ADMIN_HASLO))) {
+    zanotujNieudanaProbe(req);
     return json(res, { ok: false, blad: "Nieprawidłowe hasło administratora" }, 401);
   }
 
   const id = url.searchParams.get("gosc") || "";
   if (!id) return json(res, { ok: false, blad: "Brak identyfikatora gościa" }, 400);
+
+  /* "__anonim" = zdarzenia bez przypisanego profilu (stare testy sprzed włączenia bramy) */
+  const czyscAnonimowe = id === "__anonim";
 
   const goscie = await wczytajGosci();
   const gosc = goscie.find(g => g.id === id);
@@ -364,7 +428,10 @@ async function apiWyczyscDaneGoscia(req, res, url) {
   for (const linia of linie) {
     try {
       const z = JSON.parse(linia);
-      if (z.goscId === id || (imie && z.gosc === imie)) { usuniete++; continue; }
+      const pasuje = czyscAnonimowe
+        ? (!z.goscId && !z.gosc)
+        : (z.goscId === id || (imie && z.gosc === imie));
+      if (pasuje) { usuniete++; continue; }
       zostaja.push(linia);
     } catch (e) {
       zostaja.push(linia); /* uszkodzonych wpisów nie ruszamy */
@@ -387,7 +454,7 @@ const STATYCZNE = {
 
 async function serwujStatyczny(res, wpis) {
   const tresc = await fsp.readFile(path.join(__dirname, wpis.plik));
-  res.writeHead(200, { "Content-Type": wpis.typ });
+  res.writeHead(200, { "Content-Type": wpis.typ, ...NAGLOWKI_BEZPIECZENSTWA_HTML });
   res.end(tresc);
 }
 

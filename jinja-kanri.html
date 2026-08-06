@@ -545,6 +545,9 @@
         <div class="kafle" id="kontenerKafli"></div>
         <div class="tabela-otoczka" id="statGoscie" style="margin-top:16px;"></div>
         <p class="zart" id="zartOdmowy"></p>
+        <p style="text-align:center; margin-top:10px;">
+          <button class="btn-cichy" id="btnWyczyscAnonim" style="font-size:0.8rem;">🧹 wyczyść zdarzenia bez profilu (stare testy)</button>
+        </p>
       </div>
 
       <div class="karta">
@@ -854,7 +857,7 @@ function renderujPrzeglad() {
       if (!wgOsoby.has(klucz)) wgOsoby.set(klucz, f);
     }
     const wiersze = [...wgOsoby.values()].map(f =>
-      '<div class="szczegoly">' + (f.gosc ? "「" + esc(f.gosc) + "」 · " : "") + esc(f.ema || "?") + " · " + esc(f.dataSlownie || f.data || "?") +
+      '<div class="szczegoly">' + "「" + (f.gosc ? esc(f.gosc) : "bez profilu — stary test") + "」 · " + esc(f.ema || "?") + " · " + esc(f.dataSlownie || f.data || "?") +
       (f.pora ? " · " + esc(f.pora) : "") +
       '<div class="kiedy">kliknęła ' + czasWzgledny(f.timestamp) + " (" + czasAbsolutny(f.timestamp) + ") · " + odliczanieDoRandki(f.data) + "</div></div>"
     ).join("");
@@ -1276,6 +1279,25 @@ listaGosci.addEventListener("click", async (e) => {
     if (odp.status === 401) { wyloguj(); return; }
     goscStatus.textContent = "Gość usunięty.";
     odswiezGosci();
+  }
+});
+
+document.getElementById("btnWyczyscAnonim").addEventListener("click", async () => {
+  const hasloAdmina = prompt("Usunąć WSZYSTKIE zdarzenia bez przypisanego profilu (stare testy sprzed włączenia bramy)?\n\nPodaj hasło administratora, żeby potwierdzić:");
+  if (!hasloAdmina) return;
+  try {
+    const odp = await fetch("/api/admin/wyczysc?gosc=__anonim", {
+      method: "POST",
+      headers: naglowkiAdmina(),
+      body: JSON.stringify({ haslo: hasloAdmina })
+    });
+    const dane = await odp.json();
+    goscStatus.textContent = dane.ok
+      ? "Wyczyszczono " + dane.usuniete + " zdarzeń bez profilu."
+      : "Nie udało się: " + (dane.blad || "?");
+    if (dane.ok) wczytajZdarzenia();
+  } catch (err) {
+    goscStatus.textContent = "Błąd połączenia.";
   }
 });
 
