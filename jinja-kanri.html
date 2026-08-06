@@ -849,21 +849,37 @@ function renderujPrzeglad() {
   const finaly = zdarzenia.filter(z => z.typ === "final");
   const kartaStatus = document.getElementById("kartaStatus");
 
-  if (finaly.length > 0) {
-    /* najnowszy finał każdej osoby osobno (zdarzenia są od najnowszych) */
-    const wgOsoby = new Map();
-    for (const f of finaly) {
-      const klucz = f.goscId || f.gosc || "anonim";
-      if (!wgOsoby.has(klucz)) wgOsoby.set(klucz, f);
-    }
-    const wiersze = [...wgOsoby.values()].map(f =>
-      '<div class="szczegoly">' + "「" + (f.gosc ? esc(f.gosc) : "bez profilu — stary test") + "」 · " + esc(f.ema || "?") + " · " + esc(f.dataSlownie || f.data || "?") +
-      (f.pora ? " · " + esc(f.pora) : "") +
-      '<div class="kiedy">kliknęła ' + czasWzgledny(f.timestamp) + " (" + czasAbsolutny(f.timestamp) + ") · " + odliczanieDoRandki(f.data) + "</div></div>"
-    ).join("");
+  if (ostatniGoscie.length > 0) {
+    /* status per profil: każda dziewczyna z listy gości i jej najnowszy przypieczętowany wybór */
+    let ktokolwiekWybral = false;
+    const wiersze = ostatniGoscie.map(g => {
+      const jej = zdarzeniaGoscia(g);
+      const f = jej.find(z => z.typ === "final");
+      if (f) {
+        ktokolwiekWybral = true;
+        return '<div class="szczegoly">「' + esc(g.imie) + "」 💮 " + esc(f.ema || "?") + " · " + esc(f.dataSlownie || f.data || "?") +
+          (f.pora ? " · " + esc(f.pora) : "") +
+          '<div class="kiedy">kliknęła ' + czasWzgledny(f.timestamp) + " (" + czasAbsolutny(f.timestamp) + ") · " + odliczanieDoRandki(f.data) + "</div></div>";
+      }
+      return '<div class="szczegoly" style="color:var(--tekst-przyg);">「' + esc(g.imie) + "」 — jeszcze nie wybrała" +
+        '<div class="kiedy">' + (jej.length ? "ostatnio: " + czasWzgledny(jej[0].timestamp) + " · doszła do: " + esc(najdalszyKrok(jej)) : "jeszcze nie weszła do świątyni") + "</div></div>";
+    }).join("");
+
     kartaStatus.innerHTML =
       '<div class="etykieta">Czy już wybrała?</div>' +
-      '<div class="wynik tak">TAK! 大吉 🎉</div>' + wiersze;
+      (ktokolwiekWybral
+        ? '<div class="wynik tak">TAK! 大吉 🎉</div>'
+        : '<div class="wynik nie">jeszcze nie…</div>') +
+      wiersze;
+  } else if (finaly.length > 0) {
+    /* brak profili — tryb prosty (stare dane) */
+    const f = finaly[0];
+    kartaStatus.innerHTML =
+      '<div class="etykieta">Czy już wybrała?</div>' +
+      '<div class="wynik tak">TAK! 大吉 🎉</div>' +
+      '<div class="szczegoly">' + esc(f.ema || "?") + " · " + esc(f.dataSlownie || f.data || "?") +
+      (f.pora ? " · " + esc(f.pora) : "") + "</div>" +
+      '<div class="kiedy">kliknęła ' + czasWzgledny(f.timestamp) + " (" + czasAbsolutny(f.timestamp) + ")</div>";
   } else {
     const ostatnie = zdarzenia[0];
     kartaStatus.innerHTML =
