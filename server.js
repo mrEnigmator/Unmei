@@ -30,11 +30,14 @@ fs.mkdirSync(DATA_DIR, { recursive: true });
 
 /* ---------- pomocnicze ---------- */
 
+const HSTS = { "Strict-Transport-Security": "max-age=15552000; includeSubDomains" };
+
 /* dla HTML bez X-Frame DENY nie ma potrzeby robić wyjątku — strona nie ma być osadzana */
 const NAGLOWKI_BEZPIECZENSTWA_HTML = {
   "X-Content-Type-Options": "nosniff",
   "X-Frame-Options": "DENY",
   "Referrer-Policy": "no-referrer",
+  ...HSTS,
 };
 
 const NAGLOWKI_BEZPIECZENSTWA = {
@@ -42,6 +45,7 @@ const NAGLOWKI_BEZPIECZENSTWA = {
   "X-Frame-Options": "DENY",
   "Referrer-Policy": "no-referrer",
   "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+  ...HSTS,
 };
 
 function json(res, obj, status = 200) {
@@ -128,7 +132,26 @@ function tokenWazny(token) {
 
 /* ---------- API ---------- */
 
+const licznikZapisow = new Map(); /* ip -> { liczba, resetO } — anty-zaśmiecanie pliku zdarzeń */
+
+function zaDuzoZapisow(req) {
+  const ip = ipKlienta(req);
+  const teraz = Date.now();
+  const wpis = licznikZapisow.get(ip);
+  if (!wpis || teraz > wpis.resetO) {
+    licznikZapisow.set(ip, { liczba: 1, resetO: teraz + 5 * 60 * 1000 });
+    return false;
+  }
+  wpis.liczba++;
+  if (licznikZapisow.size > 5000) {
+    for (const [k, w] of licznikZapisow) if (teraz > w.resetO) licznikZapisow.delete(k);
+  }
+  return wpis.liczba > 60; /* ~60 zdarzeń na 5 min wystarcza na pełne przejście z grą */
+}
+
 async function apiOdpowiedz(req, res) {
+  if (zaDuzoZapisow(req)) return json(res, { ok: true }); /* cicho ignorujemy nadmiar */
+
   let dane;
   try {
     dane = JSON.parse(await wczytajCialo(req));
