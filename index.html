@@ -950,6 +950,7 @@
       <div class="kanji-final">大吉</div>
       <p id="finalTekst"></p>
       <p>Napisz mi <strong>大吉</strong> i uznaję sprawę za przypieczętowaną. よろしくね。</p>
+      <button class="btn-glowny" id="btnKopiujFinal" style="margin-top:18px; font-size:0.95rem; padding:12px 22px;">Skopiuj 大吉 📋</button>
       <p class="podpis" id="finalPodpis"></p>
     </div>
   </section>
@@ -1883,6 +1884,27 @@ btnPieczec.addEventListener("click", () => {
   document.getElementById("finalKarta").style.display = "block";
 
   deszczSakury();
+
+  /* przycisk kopiowania 大吉 — żeby mogła od razu wkleić i wysłać */
+  const btnKopiuj = document.getElementById("btnKopiujFinal");
+  btnKopiuj.addEventListener("click", async () => {
+    const wiadomosc = "大吉 🌸";
+    const potwierdz = () => {
+      btnKopiuj.textContent = "✓ skopiowane — teraz wyślij mi to 😉";
+      setTimeout(() => { btnKopiuj.textContent = "Skopiuj 大吉 📋"; }, 2500);
+    };
+    try {
+      await navigator.clipboard.writeText(wiadomosc);
+      potwierdz();
+    } catch (err) {
+      const pole = document.createElement("textarea");
+      pole.value = wiadomosc;
+      document.body.appendChild(pole);
+      pole.select();
+      try { document.execCommand("copy"); potwierdz(); } catch (e2) {}
+      pole.remove();
+    }
+  });
 
   wyslijZdarzenie({
     typ: "final",
