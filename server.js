@@ -205,7 +205,7 @@ async function apiBramaOtworz(req, res) {
   const haslo = String(dane?.haslo || "").trim().toLowerCase();
   for (const g of goscie) {
     if (bezpiecznePorownanie(haslo, String(g.haslo).trim().toLowerCase())) {
-      return json(res, { ok: true, gosc: { id: g.id, imie: g.imie } });
+      return json(res, { ok: true, gosc: { id: g.id, imie: g.imie, jezyk: g.jezyk || "pl" } });
     }
   }
   json(res, { ok: false, blad: "Duchy nie znają tego słowa" }, 401);
@@ -231,7 +231,7 @@ async function apiGoscieLista(req, res) {
   const goscie = await wczytajGosci();
   json(res, {
     ok: true,
-    goscie: goscie.map(g => ({ id: g.id, imie: g.imie, haslo: g.haslo, maAwatar: !!g.awatar, utworzono: g.utworzono }))
+    goscie: goscie.map(g => ({ id: g.id, imie: g.imie, haslo: g.haslo, jezyk: g.jezyk || "pl", maAwatar: !!g.awatar, utworzono: g.utworzono }))
   });
 }
 
@@ -254,7 +254,8 @@ async function apiGoscDodaj(req, res) {
     return json(res, { ok: false, blad: "To słowo-klucz jest już zajęte" }, 400);
   }
 
-  const gosc = { id: crypto.randomUUID().slice(0, 8), imie, haslo, awatar: null, utworzono: new Date().toISOString() };
+  const jezyk = dane.jezyk === "en" ? "en" : "pl";
+  const gosc = { id: crypto.randomUUID().slice(0, 8), imie, haslo, jezyk, awatar: null, utworzono: new Date().toISOString() };
   goscie.push(gosc);
   await zapiszGosci(goscie);
   json(res, { ok: true, gosc: { id: gosc.id, imie: gosc.imie } });
@@ -268,6 +269,26 @@ async function apiGoscUsun(req, res, url) {
   if (po.length === goscie.length) return json(res, { ok: false, blad: "Nie ma takiego gościa" }, 404);
   await zapiszGosci(po);
   json(res, { ok: true });
+}
+
+async function apiGoscJezyk(req, res, url) {
+  if (!zautoryzowany(req)) return json(res, { ok: false, blad: "Brak autoryzacji" }, 401);
+
+  let dane;
+  try {
+    dane = JSON.parse(await wczytajCialo(req));
+  } catch (e) {
+    return json(res, { ok: false, blad: "Nieprawidłowe dane" }, 400);
+  }
+
+  const id = url.searchParams.get("id") || "";
+  const goscie = await wczytajGosci();
+  const gosc = goscie.find(g => g.id === id);
+  if (!gosc) return json(res, { ok: false, blad: "Nie ma takiego gościa" }, 404);
+
+  gosc.jezyk = dane.jezyk === "en" ? "en" : "pl";
+  await zapiszGosci(goscie);
+  json(res, { ok: true, jezyk: gosc.jezyk });
 }
 
 async function apiAwatarZapisz(req, res, url) {
@@ -386,6 +407,7 @@ const serwer = http.createServer(async (req, res) => {
     if (sciezka === "/api/admin/goscie" && req.method === "GET") return await apiGoscieLista(req, res);
     if (sciezka === "/api/admin/goscie" && req.method === "POST") return await apiGoscDodaj(req, res);
     if (sciezka === "/api/admin/goscie" && req.method === "DELETE") return await apiGoscUsun(req, res, url);
+    if (sciezka === "/api/admin/gosc-jezyk" && req.method === "POST") return await apiGoscJezyk(req, res, url);
     if (sciezka === "/api/admin/wyczysc" && req.method === "POST") return await apiWyczyscDaneGoscia(req, res, url);
     if (sciezka === "/api/admin/awatar" && req.method === "POST") return await apiAwatarZapisz(req, res, url);
     if (sciezka === "/api/admin/awatar" && req.method === "DELETE") return await apiAwatarUsun(req, res, url);

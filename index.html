@@ -1090,6 +1090,166 @@ if (new URLSearchParams(location.search).has("reset")) {
 
 try { goscInfo = JSON.parse(sessionStorage.getItem("gosc") || "null"); } catch (e) {}
 
+/* ---------- języki: polski (bazowy) i angielski, przypięte do profilu gościa ---------- */
+let JEZYK = "pl";
+
+const TEKSTY = {
+  pl: {
+    hintDzwon: "🔔 uderz w dzwon, żeby obudzić duchy",
+    hintPoDzwonie: "⛩️ duchy się obudziły — kliknij bramę, żeby wejść",
+    hintNajpierw: "🔔 najpierw obudź duchy — uderz w dzwon!",
+    potrzasnij: "potrząśnij pudełkiem…",
+    grzechocze: (n) => "(" + n + "/3)… coś grzechocze w środku",
+    losWybrany: "(3/3) los został wybrany!",
+    komentarze: [
+      "Losu się nie odrzuca. 🙃",
+      "Duchy świątyni mówią: nie.",
+      "Ten przycisk jest przeklęty.",
+      "大吉 to 大吉. Koniec dyskusji.",
+      "Nawet płatki sakury się śmieją.",
+      "Dobra, on już nie wróci. Zostało jedno wyjście."
+    ],
+    graZaliczona: "Próba zaliczona! Duchy otwierają dalszą drogę…",
+    graPominieta: "Duchy machnęły ręką. Droga otwarta…",
+    zawieszone: "Życzenie zawieszone: ",
+    randka: "randka",
+    kopiuj: "Skopiuj 大吉 📋",
+    skopiowane: "✓ skopiowane — teraz wyślij mi to 😉",
+    odliczDzis: "Dzień przeznaczenia to DZIŚ! 🌸",
+    odliczPo: "Przeznaczenie się wypełniło. ⛩️",
+    odliczDo: "⏳ do dnia przeznaczenia: ",
+    dzien1: "dzień", dniN: "dni", godz: "godz.", minuty: "min",
+    gPodtytul: "goshuin · pieczęć Świątyni Przeznaczenia",
+    gPoznala: "poznała swoje przeznaczenie",
+    gWybranka: "Wybranka losu",
+    gStopka: "en-musubi — związanie losów · ",
+    bladBariery: "Duchy nie znają tego słowa… spróbuj jeszcze raz. 🌸",
+    bladSieci: "Bariera milczy — sprawdź połączenie.",
+    dniTygodnia: ["Pn", "Wt", "Śr", "Cz", "Pt", "So", "Nd"],
+    locale: "pl-PL",
+    pory: {},
+    emy: {}
+  },
+  en: {
+    hintDzwon: "🔔 strike the bell to wake the spirits",
+    hintPoDzwonie: "⛩️ the spirits are awake — tap the gate to enter",
+    hintNajpierw: "🔔 wake the spirits first — strike the bell!",
+    potrzasnij: "shake the box…",
+    grzechocze: (n) => "(" + n + "/3)… something is rattling inside",
+    losWybrany: "(3/3) fate has chosen!",
+    komentarze: [
+      "Fate cannot be rejected. 🙃",
+      "The temple spirits say: no.",
+      "This button is cursed.",
+      "大吉 is 大吉. End of discussion.",
+      "Even the sakura petals are laughing.",
+      "Fine — it's gone for good. Only one path remains."
+    ],
+    graZaliczona: "Trial passed! The spirits open the way…",
+    graPominieta: "The spirits waved it off. The path is open…",
+    zawieszone: "Wish hung: ",
+    randka: "a date",
+    kopiuj: "Copy 大吉 📋",
+    skopiowane: "✓ copied — now send it to me 😉",
+    odliczDzis: "Destiny day is TODAY! 🌸",
+    odliczPo: "Destiny has been fulfilled. ⛩️",
+    odliczDo: "⏳ until the day of destiny: ",
+    dzien1: "day", dniN: "days", godz: "hrs", minuty: "min",
+    gPodtytul: "goshuin · seal of the Temple of Destiny",
+    gPoznala: "has learned her destiny",
+    gWybranka: "Chosen by fate",
+    gStopka: "en-musubi — the binding of fates · ",
+    bladBariery: "The spirits don't know this word… try again. 🌸",
+    bladSieci: "The barrier is silent — check your connection.",
+    dniTygodnia: ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"],
+    locale: "en-GB",
+    pory: { "przed południem": "in the morning", "po południu": "in the afternoon", "wieczorem": "in the evening" },
+    emy: { "Kawa": "Coffee", "Spacer": "Walk", "Przejażdżka": "Ride" }
+  }
+};
+
+function T(klucz) {
+  return (TEKSTY[JEZYK] && TEKSTY[JEZYK][klucz] !== undefined) ? TEKSTY[JEZYK][klucz] : TEKSTY.pl[klucz];
+}
+
+function poraNapis(p) {
+  if (!p) return p;
+  return T("pory")[p] || p;
+}
+
+function emaNapis(e) {
+  if (!e) return e;
+  return T("emy")[e] || e;
+}
+
+function ustawJezyk(j) {
+  JEZYK = j === "en" ? "en" : "pl";
+  if (JEZYK !== "en") return; /* strona bazowo jest po polsku */
+
+  const ust = (sel, tresc) => { const el = document.querySelector(sel); if (el) el.innerHTML = tresc; };
+
+  /* etap 1 */
+  ust("#etap1 h1", "Temple of Destiny");
+  ust("#etap1 .podtytul", "They say that whoever passes through this gate will learn their fortune for the week ahead.");
+  ust("#hintEtap1", dzwonUderzony ? T("hintPoDzwonie") : T("hintDzwon"));
+
+  /* etap 2 */
+  ust("#etap2 h2", "Draw your fortune");
+  ust("#etap2 .podtytul", "Shake the box three times and fate will pick a stick for you.");
+  if (potrzasniecia === 0) ust("#licznikPotrzasniec", T("potrzasnij"));
+
+  /* etap 3 — zwój */
+  ust("#etap3 .znak-podpis", "dai-kichi · great fortune");
+  const wersy = document.querySelectorAll("#etap3 .wers");
+  const tlumWersow = [
+    ["koi — Love", "someone built an entire shrine on the internet just for you. That's a good sign."],
+    ["kōhī — Coffee", "a cup of something warm tastes twice as good when shared by two."],
+    ["tabi — The Road", "a walk under the stars or a short ride in good company will bring luck."],
+    ["yume — A Dream", "and if fate whispers your own path — choose it boldly. The spirits love brave ideas."]
+  ];
+  wersy.forEach((w, i) => {
+    if (!tlumWersow[i]) return;
+    w.querySelector(".etykieta").textContent = tlumWersow[i][0];
+    w.querySelector("p").textContent = tlumWersow[i][1];
+  });
+  ust("#etap3 .final-wrozby", "The fortune is clear: a date with me is written in the stars. You don't argue with fate. 🌸");
+  ust("#btnPrzyjmij", "I accept destiny ⛩️");
+  ust("#btnOdrzuc", "I reject fate");
+
+  /* gra */
+  ust("#etapGra h2", "Trial of courage");
+  ust("#etapGra .podtytul", "Before you hang your wish, the temple spirits will test your agility. Collect <strong>7 sakura petals</strong> — tap the screen (or press space) to jump. Double jump works! Watch out for the lanterns.");
+  ust("#graPodpowiedz", "tap to jump");
+  ust("#btnPominGre", "the spirits take pity — skip the trial");
+
+  /* etap 4 — ema */
+  ust("#etap4 h2", "Hang your wish");
+  ust("#etap4 .podtytul", "In shrines, wishes are written on wooden ema tablets. Choose what our destiny should look like:");
+  ust('.ema[data-ema="Kawa"] .nazwa', "Coffee");
+  ust('.ema[data-ema="Spacer"] .nazwa', "Walk");
+  ust('.ema[data-ema="Przejażdżka"] .nazwa', "Ride");
+  ust('.ema[data-ema="__wlasna"] .nazwa', "Your idea ✨");
+  ust(".wlasna-ema-etykieta", "夢 (yume) means „dream” — write yours:");
+  const pole = document.getElementById("poleWlasnejEmy");
+  if (pole) pole.placeholder = "e.g. sunset and lanterns…";
+  ust("#btnDalejEma", "Next ⛩️");
+
+  /* etap 5 — kalendarz i finał */
+  ust("#etap5 h2", "Choose the day of destiny");
+  ust('.pora[data-pora="przed południem"]', "☕ morning");
+  ust('.pora[data-pora="po południu"]', "🌸 afternoon");
+  ust('.pora[data-pora="wieczorem"]', "🌙 evening");
+  ust("#btnPieczec", "Seal the fate ⛩️");
+  const finalP = document.querySelector("#finalKarta p:nth-of-type(2)");
+  if (finalP) finalP.innerHTML = "Text me <strong>大吉</strong> and I'll consider it sealed. よろしくね。";
+  ust("#btnKopiujFinal", T("kopiuj"));
+  ust("#btnGoshuin", "Show the seal 御朱印");
+  ust("#btnGoshuinPobierz", "Save as image 📥");
+  ust("#btnGoshuinZamknij", "Close");
+
+  try { rysujKalendarz(); } catch (e) { /* kalendarz jeszcze nie zainicjowany */ }
+}
+
 function wyslijZdarzenie(dane) {
   try {
     fetch("/api/odpowiedz", {
@@ -1119,7 +1279,11 @@ async function initBariera() {
     const dane = await odp.json();
 
     /* zapamiętany gość, który wciąż istnieje — wchodzi bez pytania */
-    if (goscInfo && dane.goscWazny) { zaladujAwatarGoscia(); return; }
+    if (goscInfo && dane.goscWazny) {
+      zaladujAwatarGoscia();
+      if (goscInfo.jezyk) ustawJezyk(goscInfo.jezyk);
+      return;
+    }
 
     /* gość usunięty w panelu albo nieznany — czyścimy sesję */
     if (goscInfo) {
@@ -1154,18 +1318,19 @@ formBariery.addEventListener("submit", async (e) => {
       goscInfo = dane.gosc || null;
       try { sessionStorage.setItem("gosc", JSON.stringify(goscInfo)); } catch (err) {}
       zaladujAwatarGoscia();
+      if (goscInfo && goscInfo.jezyk) ustawJezyk(goscInfo.jezyk);
       wyslijZdarzenie({ typ: "etap", etap: "brama" });
       document.getElementById("etap0").classList.remove("aktywny");
       document.getElementById("etap1").classList.add("aktywny");
     } else {
-      bladBariery.textContent = "Duchy nie znają tego słowa… spróbuj jeszcze raz. 🌸";
+      bladBariery.textContent = T("bladBariery");
       const karta = formBariery;
       karta.classList.remove("trzesie");
       void karta.offsetWidth;
       karta.classList.add("trzesie");
     }
   } catch (err) {
-    bladBariery.textContent = "Bariera milczy — sprawdź połączenie.";
+    bladBariery.textContent = T("bladSieci");
   }
 });
 
@@ -1307,14 +1472,14 @@ btnDzwon.addEventListener("click", () => {
   if (!dzwonUderzony) {
     dzwonUderzony = true;
     btnDzwon.classList.add("uderzony");
-    hintEtap1.textContent = "⛩️ duchy się obudziły — kliknij bramę, żeby wejść";
+    hintEtap1.textContent = T("hintPoDzwonie");
     wyslijZdarzenie({ typ: "etap", etap: "dzwon" });
   }
 });
 
 document.getElementById("btnTorii").addEventListener("click", () => {
   if (!dzwonUderzony) {
-    hintEtap1.textContent = "🔔 najpierw obudź duchy — uderz w dzwon!";
+    hintEtap1.textContent = T("hintNajpierw");
     return;
   }
   startMuzyki();
@@ -1336,9 +1501,9 @@ pudelko.addEventListener("click", () => {
   pudelko.classList.add("trzesie");
 
   if (potrzasniecia < 3) {
-    licznikEl.textContent = "(" + potrzasniecia + "/3)… coś grzechocze w środku";
+    licznikEl.textContent = T("grzechocze")(potrzasniecia);
   } else {
-    licznikEl.textContent = "(3/3) los został wybrany!";
+    licznikEl.textContent = T("losWybrany");
     setTimeout(() => patyczek.classList.add("wysuniety"), 500);
     setTimeout(() => pokazEtap(3), 2100);
   }
@@ -1364,7 +1529,7 @@ function ucieczka() {
   if (probyOdmowy >= KOMENTARZE.length) return;
   probyOdmowy++;
 
-  komentarzEl.textContent = KOMENTARZE[probyOdmowy - 1];
+  komentarzEl.textContent = T("komentarze")[probyOdmowy - 1];
   btnPrzyjmij.style.transform = "scale(" + (1 + probyOdmowy * 0.09) + ")";
 
   wyslijZdarzenie({ typ: "etap", etap: "proba-odmowy", probyOdmowy });
@@ -1488,9 +1653,7 @@ function zakonczGre(pominieta) {
   btnPominGre.classList.remove("widoczny");
 
   document.getElementById("graOverlayTytul").textContent = pominieta ? "慈悲" : "合格";
-  document.getElementById("graOverlayTekst").textContent = pominieta
-    ? "Duchy machnęły ręką. Droga otwarta…"
-    : "Próba zaliczona! Duchy otwierają dalszą drogę…";
+  document.getElementById("graOverlayTekst").textContent = pominieta ? T("graPominieta") : T("graZaliczona");
   graOverlay.classList.add("widoczny");
 
   wyslijZdarzenie({
@@ -1994,14 +2157,14 @@ let wybranaData = null;
 let wybranaPora = null;
 
 function rysujKalendarz() {
-  const fmtMiesiac = new Intl.DateTimeFormat("pl-PL", { month: "long", year: "numeric" });
+  const fmtMiesiac = new Intl.DateTimeFormat(T("locale"), { month: "long", year: "numeric" });
   naglowekMiesiaca.textContent = fmtMiesiac.format(new Date(widocznyRok, widocznyMiesiac, 1));
 
   /* nie cofamy się przed bieżący miesiąc */
   btnPoprzedni.disabled = widocznyRok === dzis.getFullYear() && widocznyMiesiac === dzis.getMonth();
 
   siatka.innerHTML = "";
-  DNI_TYGODNIA.forEach(d => {
+  T("dniTygodnia").forEach(d => {
     const el = document.createElement("div");
     el.className = "dzien-tygodnia";
     el.textContent = d;
@@ -2075,11 +2238,11 @@ rysujKalendarz();
 btnPieczec.addEventListener("click", () => {
   if (!wybranaData) return;
 
-  const fmt = new Intl.DateTimeFormat("pl-PL", { weekday: "long", day: "numeric", month: "long" });
+  const fmt = new Intl.DateTimeFormat(T("locale"), { weekday: "long", day: "numeric", month: "long" });
   const dataSlownie = fmt.format(wybranaData);
 
-  let tekst = "Życzenie zawieszone: " + (wybranaEma || "randka") + ", " + dataSlownie;
-  if (wybranaPora) tekst += ", " + wybranaPora;
+  let tekst = T("zawieszone") + (emaNapis(wybranaEma) || T("randka")) + ", " + dataSlownie;
+  if (wybranaPora) tekst += ", " + poraNapis(wybranaPora);
   tekst += ".";
 
   document.getElementById("finalTekst").textContent = tekst;
@@ -2100,21 +2263,21 @@ btnPieczec.addEventListener("click", () => {
     const dzisPolnoc = new Date(teraz.getFullYear(), teraz.getMonth(), teraz.getDate());
 
     if (dzisPolnoc.getTime() === celDnia.getTime()) {
-      elOdliczanie.textContent = "Dzień przeznaczenia to DZIŚ! 🌸" + (wybranaPora ? " (" + wybranaPora + ")" : "");
+      elOdliczanie.textContent = T("odliczDzis") + (wybranaPora ? " (" + poraNapis(wybranaPora) + ")" : "");
       return;
     }
     if (teraz > celDnia) {
-      elOdliczanie.textContent = "Przeznaczenie się wypełniło. ⛩️";
+      elOdliczanie.textContent = T("odliczPo");
       return;
     }
     const ms = celDnia - teraz;
     const dni = Math.floor(ms / 86400000);
     const godz = Math.floor((ms % 86400000) / 3600000);
     const min = Math.floor((ms % 3600000) / 60000);
-    elOdliczanie.textContent = "⏳ do dnia przeznaczenia: " +
-      (dni > 0 ? dni + " " + (dni === 1 ? "dzień" : "dni") + " " : "") +
-      godz + " godz. " + min + " min" +
-      (wybranaPora ? " · " + wybranaPora : "");
+    elOdliczanie.textContent = T("odliczDo") +
+      (dni > 0 ? dni + " " + (dni === 1 ? T("dzien1") : T("dniN")) + " " : "") +
+      godz + " " + T("godz") + " " + min + " " + T("minuty") +
+      (wybranaPora ? " · " + poraNapis(wybranaPora) : "");
   }
 
   tikOdliczania();
@@ -2151,7 +2314,7 @@ btnPieczec.addEventListener("click", () => {
     c.fillText("運命神社", 310, 110);
     c.fillStyle = "#8a7a63";
     c.font = "20px 'Lato', 'Zen Kaku Gothic New', sans-serif";
-    c.fillText("goshuin · pieczęć Świątyni Przeznaczenia", 310, 145);
+    c.fillText(T("gPodtytul"), 310, 145);
 
     /* wielka okrągła pieczęć */
     c.save();
@@ -2169,16 +2332,16 @@ btnPieczec.addEventListener("click", () => {
     /* dane */
     c.fillStyle = "#3c2f26";
     c.font = "700 34px 'Playfair Display', 'Shippori Mincho', serif";
-    c.fillText(goscInfo && goscInfo.imie ? goscInfo.imie : "Wybranka losu", 310, 540);
+    c.fillText(goscInfo && goscInfo.imie ? goscInfo.imie : T("gWybranka"), 310, 540);
     c.fillStyle = "#8a7a63";
     c.font = "20px 'Lato', 'Zen Kaku Gothic New', sans-serif";
-    c.fillText("poznała swoje przeznaczenie", 310, 572);
+    c.fillText(T("gPoznala"), 310, 572);
 
     c.fillStyle = "#3c2f26";
     c.font = "26px 'Lato', 'Zen Kaku Gothic New', sans-serif";
-    const fmt = new Intl.DateTimeFormat("pl-PL", { weekday: "long", day: "numeric", month: "long" });
-    c.fillText("💮 " + (wybranaEma || "randka"), 310, 630);
-    c.fillText(fmt.format(wybranaData) + (wybranaPora ? " · " + wybranaPora : ""), 310, 668);
+    const fmtG = new Intl.DateTimeFormat(T("locale"), { weekday: "long", day: "numeric", month: "long" });
+    c.fillText("💮 " + (emaNapis(wybranaEma) || T("randka")), 310, 630);
+    c.fillText(fmtG.format(wybranaData) + (wybranaPora ? " · " + poraNapis(wybranaPora) : ""), 310, 668);
 
     /* stopka */
     c.fillStyle = "#9e2f2c";
@@ -2186,7 +2349,7 @@ btnPieczec.addEventListener("click", () => {
     c.fillText("縁結び", 310, 748);
     c.fillStyle = "#8a7a63";
     c.font = "18px 'Lato', 'Zen Kaku Gothic New', sans-serif";
-    c.fillText("en-musubi — związanie losów · " + new Date().toLocaleDateString("pl-PL"), 310, 780);
+    c.fillText(T("gStopka") + new Date().toLocaleDateString(T("locale")), 310, 780);
 
     /* pokazujemy pieczęć na ekranie; pobranie to osobny przycisk */
     const dataUrl = k.toDataURL("image/png");
@@ -2215,8 +2378,8 @@ btnPieczec.addEventListener("click", () => {
   btnKopiuj.addEventListener("click", async () => {
     const wiadomosc = "大吉 🌸";
     const potwierdz = () => {
-      btnKopiuj.textContent = "✓ skopiowane — teraz wyślij mi to 😉";
-      setTimeout(() => { btnKopiuj.textContent = "Skopiuj 大吉 📋"; }, 2500);
+      btnKopiuj.textContent = T("skopiowane");
+      setTimeout(() => { btnKopiuj.textContent = T("kopiuj"); }, 2500);
     };
     try {
       await navigator.clipboard.writeText(wiadomosc);

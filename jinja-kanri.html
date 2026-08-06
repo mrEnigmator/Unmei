@@ -556,6 +556,10 @@
         <form id="formGosc" class="gosc-form">
           <input type="text" id="poleImienia" placeholder="imię, np. Kasia" maxlength="40" required>
           <input type="text" id="poleKlucza" placeholder="słowo-klucz, np. sakura" maxlength="60" autocomplete="off" required>
+          <select id="poleJezyka" aria-label="Język strony dla tego gościa" title="Język strony dla tego gościa">
+            <option value="pl">🇵🇱 polski</option>
+            <option value="en">🇬🇧 English</option>
+          </select>
           <button type="submit" class="btn-glowny">Dodaj gościa</button>
         </form>
 
@@ -1163,6 +1167,7 @@ async function odswiezGosci() {
       '<div class="gosc-akcje">' +
       '<button class="btn-cichy" data-akcja="zdjecie" data-id="' + g.id + '" title="Wgraj zdjęcie do gry">📷</button>' +
       (g.maAwatar ? '<button class="btn-cichy" data-akcja="usun-zdjecie" data-id="' + g.id + '" title="Przywróć liska">🦊</button>' : '') +
+      '<button class="btn-cichy" data-akcja="jezyk" data-id="' + g.id + '" data-jezyk="' + (g.jezyk || "pl") + '" title="Język strony dla tego gościa — kliknij, żeby przełączyć">' + (g.jezyk === "en" ? "🇬🇧" : "🇵🇱") + '</button>' +
       '<button class="btn-cichy" data-akcja="wyczysc" data-id="' + g.id + '" data-imie="' + esc(g.imie) + '" title="Wyczyść jej dane (wymaga hasła admina)">🧹</button>' +
       '<button class="btn-cichy" data-akcja="usun" data-id="' + g.id + '" data-imie="' + esc(g.imie) + '" title="Usuń gościa">🗑</button>' +
       '</div>' +
@@ -1229,6 +1234,20 @@ listaGosci.addEventListener("click", async (e) => {
     return;
   }
 
+  if (btn.dataset.akcja === "jezyk") {
+    const nowy = btn.dataset.jezyk === "en" ? "pl" : "en";
+    const odp = await fetch("/api/admin/gosc-jezyk?id=" + encodeURIComponent(id), {
+      method: "POST",
+      headers: naglowkiAdmina(),
+      body: JSON.stringify({ jezyk: nowy })
+    });
+    if (odp.status === 401) { wyloguj(); return; }
+    const dane = await odp.json();
+    goscStatus.textContent = dane.ok ? ("Język zmieniony na " + (dane.jezyk === "en" ? "🇬🇧 angielski" : "🇵🇱 polski") + ".") : "Nie udało się zmienić języka.";
+    odswiezGosci();
+    return;
+  }
+
   if (btn.dataset.akcja === "wyczysc") {
     const hasloAdmina = prompt("Czyszczenie danych „" + btn.dataset.imie + "” usunie CAŁĄ jej historię (wejścia, odpowiedzi, logi).\n\nPodaj hasło administratora, żeby potwierdzić:");
     if (!hasloAdmina) return;
@@ -1270,7 +1289,7 @@ document.getElementById("formGosc").addEventListener("submit", async (e) => {
     const odp = await fetch("/api/admin/goscie", {
       method: "POST",
       headers: naglowkiAdmina(),
-      body: JSON.stringify({ imie, haslo })
+      body: JSON.stringify({ imie, haslo, jezyk: document.getElementById("poleJezyka").value })
     });
     if (odp.status === 401) { wyloguj(); return; }
     const dane = await odp.json();
