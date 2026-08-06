@@ -1184,6 +1184,7 @@ async function odswiezGosci() {
       '<div class="gosc-dane"><span class="imie">' + esc(g.imie) + '</span> ' +
       '<button class="klucz" data-akcja="kopiuj" data-haslo="' + esc(g.haslo) + '" title="Kliknij, żeby skopiować słowo-klucz">🗝️ ' + esc(g.haslo) + '</button></div>' +
       '<div class="gosc-akcje">' +
+      '<button class="btn-cichy" data-akcja="goshuin" data-id="' + g.id + '" title="Pobierz jej pieczęć goshuin (tę samą, którą dostała po finale)">🖼️</button>' +
       '<button class="btn-cichy" data-akcja="zdjecie" data-id="' + g.id + '" title="Wgraj zdjęcie do gry">📷</button>' +
       (g.maAwatar ? '<button class="btn-cichy" data-akcja="usun-zdjecie" data-id="' + g.id + '" title="Przywróć liska">🦊</button>' : '') +
       '<button class="btn-cichy" data-akcja="jezyk" data-id="' + g.id + '" data-jezyk="' + (g.jezyk || "pl") + '" title="Język strony dla tego gościa — kliknij, żeby przełączyć">' + (g.jezyk === "en" ? "🇬🇧" : "🇵🇱") + '</button>' +
@@ -1197,6 +1198,87 @@ async function odswiezGosci() {
     ).join("");
     renderujPrzeglad(); /* statystyki per gość zależą od listy gości */
   } catch (e) { /* offline */ }
+}
+
+/* ---------- pieczęć goshuin (ta sama, którą gość dostaje po finale) ---------- */
+
+const GOSHUIN_TEKSTY = {
+  pl: { podtytul: "goshuin · pieczęć Świątyni Przeznaczenia", poznala: "poznała swoje przeznaczenie", wybranka: "Wybranka losu", stopka: "en-musubi — związanie losów · ", locale: "pl-PL", emy: {}, pory: {} },
+  en: { podtytul: "goshuin · seal of the Temple of Destiny", poznala: "has learned her destiny", wybranka: "Chosen by fate", stopka: "en-musubi — the binding of fates · ", locale: "en-GB",
+        emy: { "Kawa": "Coffee", "Spacer": "Walk", "Przejażdżka": "Ride" },
+        pory: { "przed południem": "in the morning", "po południu": "in the afternoon", "wieczorem": "in the evening" } }
+};
+
+async function pobierzGoshuin(gosc, f) {
+  const jezyk = (gosc.jezyk === "en") ? "en" : "pl";
+  const S = GOSHUIN_TEKSTY[jezyk];
+  const ema = S.emy[f.ema] || f.ema;
+  const pora = f.pora ? (S.pory[f.pora] || f.pora) : null;
+  /* dataSlownie zapisana już w języku gościa; awaryjnie formatujemy z daty */
+  let dataTekst = f.dataSlownie;
+  if (!dataTekst && f.data) {
+    const [r, m, d] = f.data.split("-").map(Number);
+    dataTekst = new Intl.DateTimeFormat(S.locale, { weekday: "long", day: "numeric", month: "long" }).format(new Date(r, m - 1, d));
+  }
+  dataTekst = dataTekst || "?";
+
+  try { await document.fonts.ready; } catch (e) {}
+
+  const k = document.createElement("canvas");
+  k.width = 620; k.height = 860;
+  const c = k.getContext("2d");
+
+  c.fillStyle = "#f5efe2";
+  c.fillRect(0, 0, 620, 860);
+  c.strokeStyle = "rgba(60, 47, 38, 0.08)";
+  c.lineWidth = 1;
+  for (let y = 40; y < 860; y += 26) { c.beginPath(); c.moveTo(30, y); c.lineTo(590, y); c.stroke(); }
+
+  c.strokeStyle = "#c73e3a";
+  c.lineWidth = 5; c.strokeRect(22, 22, 576, 816);
+  c.lineWidth = 1.5; c.strokeRect(34, 34, 552, 792);
+
+  c.textAlign = "center";
+  c.fillStyle = "#9e2f2c";
+  c.font = "700 54px 'Playfair Display', 'Shippori Mincho', serif";
+  c.fillText("運命神社", 310, 110);
+  c.fillStyle = "#8a7a63";
+  c.font = "20px 'Lato', 'Zen Kaku Gothic New', sans-serif";
+  c.fillText(S.podtytul, 310, 145);
+
+  c.save();
+  c.translate(310, 330); c.rotate(-0.06);
+  c.beginPath(); c.arc(0, 0, 130, 0, 6.29); c.fillStyle = "#c73e3a"; c.fill();
+  c.beginPath(); c.arc(0, 0, 118, 0, 6.29); c.strokeStyle = "#f5efe2"; c.lineWidth = 3; c.stroke();
+  c.fillStyle = "#f5efe2"; c.font = "800 92px 'Playfair Display', 'Shippori Mincho', serif";
+  c.fillText("大吉", 0, 32);
+  c.restore();
+
+  c.fillStyle = "#3c2f26";
+  c.font = "700 34px 'Playfair Display', 'Shippori Mincho', serif";
+  c.fillText(gosc.imie || S.wybranka, 310, 540);
+  c.fillStyle = "#8a7a63";
+  c.font = "20px 'Lato', 'Zen Kaku Gothic New', sans-serif";
+  c.fillText(S.poznala, 310, 572);
+
+  c.fillStyle = "#3c2f26";
+  c.font = "26px 'Lato', 'Zen Kaku Gothic New', sans-serif";
+  c.fillText("💮 " + (ema || "?"), 310, 630);
+  c.fillText(dataTekst + (pora ? " · " + pora : ""), 310, 668);
+
+  c.fillStyle = "#9e2f2c";
+  c.font = "700 30px 'Playfair Display', 'Shippori Mincho', serif";
+  c.fillText("縁結び", 310, 748);
+  c.fillStyle = "#8a7a63";
+  c.font = "18px 'Lato', 'Zen Kaku Gothic New', sans-serif";
+  const dataFinalu = f.timestamp ? new Date(f.timestamp).toLocaleDateString(S.locale) : "";
+  c.fillText(S.stopka + dataFinalu, 310, 780);
+
+  const a = document.createElement("a");
+  a.href = k.toDataURL("image/png");
+  a.download = "goshuin-" + (gosc.imie || "gosc").replace(/[^a-zA-Z0-9]/g, "_") + ".png";
+  a.click();
+  goscStatus.textContent = "Pobrano pieczęć „" + gosc.imie + "”. 🖼️";
 }
 
 listaGosci.addEventListener("click", async (e) => {
@@ -1242,6 +1324,15 @@ listaGosci.addEventListener("click", async (e) => {
   if (btn.dataset.akcja === "zdjecie") {
     awatarDlaGoscia = id;
     plikAwatara.click();
+    return;
+  }
+
+  if (btn.dataset.akcja === "goshuin") {
+    const gosc = ostatniGoscie.find(g => g.id === id);
+    const jej = gosc ? zdarzeniaGoscia(gosc) : [];
+    const f = jej.find(z => z.typ === "final");
+    if (!f) { goscStatus.textContent = "Ta osoba jeszcze nie przypieczętowała losu — brak pieczęci."; return; }
+    pobierzGoshuin(gosc, f);
     return;
   }
 
