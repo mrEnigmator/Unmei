@@ -106,6 +106,21 @@
 
   input::placeholder { color: rgba(169, 162, 148, 0.6); }
 
+  /* ---------- okno pieczęci goshuin ---------- */
+  .goshuin-tlo {
+    position: fixed; inset: 0; z-index: 100;
+    display: none; align-items: center; justify-content: center;
+    flex-direction: column; gap: 16px; padding: 20px;
+    background: rgba(10, 12, 20, 0.85);
+    backdrop-filter: blur(5px);
+  }
+  .goshuin-tlo.widoczne { display: flex; }
+  .goshuin-tlo img {
+    max-width: min(400px, 88vw); max-height: 70vh; border-radius: 6px;
+    box-shadow: 0 18px 60px rgba(0,0,0,0.7), 0 0 40px rgba(217,164,65,0.15);
+  }
+  .goshuin-przyciski { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+
   select { appearance: auto; }
   select option { background: var(--noc2); color: var(--tekst); }
 
@@ -500,6 +515,15 @@
 </head>
 <body>
 <div class="platki" aria-hidden="true"></div>
+
+<div class="goshuin-tlo" id="goshuinOkno" role="dialog" aria-label="Pieczęć goshuin">
+  <img id="goshuinObraz" alt="Pieczęć goshuin">
+  <div class="goshuin-przyciski">
+    <button class="btn-glowny" id="btnGoshuinPobierz">Pobierz jako zdjęcie 📥</button>
+    <button class="btn-cichy" id="btnGoshuinZamknij">Zamknij</button>
+  </div>
+</div>
+
 <div class="kontener">
 
   <!-- ---------- LOGOWANIE ---------- -->
@@ -1209,7 +1233,7 @@ const GOSHUIN_TEKSTY = {
         pory: { "przed południem": "in the morning", "po południu": "in the afternoon", "wieczorem": "in the evening" } }
 };
 
-async function pobierzGoshuin(gosc, f) {
+async function pokazGoshuin(gosc, f) {
   const jezyk = (gosc.jezyk === "en") ? "en" : "pl";
   const S = GOSHUIN_TEKSTY[jezyk];
   const ema = S.emy[f.ema] || f.ema;
@@ -1274,12 +1298,27 @@ async function pobierzGoshuin(gosc, f) {
   const dataFinalu = f.timestamp ? new Date(f.timestamp).toLocaleDateString(S.locale) : "";
   c.fillText(S.stopka + dataFinalu, 310, 780);
 
-  const a = document.createElement("a");
-  a.href = k.toDataURL("image/png");
-  a.download = "goshuin-" + (gosc.imie || "gosc").replace(/[^a-zA-Z0-9]/g, "_") + ".png";
-  a.click();
-  goscStatus.textContent = "Pobrano pieczęć „" + gosc.imie + "”. 🖼️";
+  const dataUrl = k.toDataURL("image/png");
+  const nazwa = "goshuin-" + (gosc.imie || "gosc").replace(/[^a-zA-Z0-9]/g, "_") + ".png";
+  document.getElementById("goshuinObraz").src = dataUrl;
+  const btnPob = document.getElementById("btnGoshuinPobierz");
+  btnPob.dataset.url = dataUrl;
+  btnPob.dataset.nazwa = nazwa;
+  document.getElementById("goshuinOkno").classList.add("widoczne");
 }
+
+document.getElementById("btnGoshuinPobierz").addEventListener("click", (e) => {
+  const a = document.createElement("a");
+  a.href = e.currentTarget.dataset.url;
+  a.download = e.currentTarget.dataset.nazwa || "goshuin.png";
+  a.click();
+});
+document.getElementById("btnGoshuinZamknij").addEventListener("click", () => {
+  document.getElementById("goshuinOkno").classList.remove("widoczne");
+});
+document.getElementById("goshuinOkno").addEventListener("click", (e) => {
+  if (e.target === e.currentTarget) e.currentTarget.classList.remove("widoczne");
+});
 
 listaGosci.addEventListener("click", async (e) => {
   const btn = e.target.closest("button[data-akcja]");
@@ -1332,7 +1371,7 @@ listaGosci.addEventListener("click", async (e) => {
     const jej = gosc ? zdarzeniaGoscia(gosc) : [];
     const f = jej.find(z => z.typ === "final");
     if (!f) { goscStatus.textContent = "Ta osoba jeszcze nie przypieczętowała losu — brak pieczęci."; return; }
-    pobierzGoshuin(gosc, f);
+    pokazGoshuin(gosc, f);
     return;
   }
 
