@@ -168,6 +168,39 @@
     padding: 13px 24px;
   }
 
+  /* ---------- muzyka w tle ---------- */
+  #muzykaPlayer {
+    position: fixed;
+    top: -9999px;
+    left: -9999px;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .btn-muzyka {
+    position: fixed;
+    top: 14px;
+    left: 14px;
+    z-index: 50;
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    background: rgba(16, 19, 31, 0.65);
+    border: 1px solid rgba(217, 164, 65, 0.4);
+    color: var(--zloto);
+    font-size: 1.25rem;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(4px);
+    padding: 0;
+  }
+
+  .btn-muzyka.widoczny { display: flex; }
+  .btn-muzyka:hover { border-color: var(--zloto); }
+
   /* ================= ETAP 1: TORII ================= */
   .torii-svg {
     margin-top: 36px;
@@ -708,6 +741,8 @@
 <body>
 
 <div class="ksiezyc" aria-hidden="true"></div>
+<div id="muzykaPlayer" aria-hidden="true"></div>
+<button class="btn-muzyka" id="btnMuzyka" aria-label="Włącz lub wyłącz muzykę" title="muzyka">♪</button>
 <div class="platki" id="platki" aria-hidden="true"></div>
 
 <main>
@@ -885,6 +920,65 @@ function wyslijZdarzenie(dane) {
 
 wyslijZdarzenie({ typ: "wizyta" });
 
+/* ---------- muzyka w tle (YouTube, samo audio) ---------- */
+const MUZYKA_VIDEO_ID = "kdYWYNsOGH0";
+const btnMuzyka = document.getElementById("btnMuzyka");
+let muzykaPlayer = null;
+let muzykaGra = false;
+let muzykaChciana = true; /* domyślnie włączona — wystartuje przy pierwszym dotknięciu strony */
+
+function aktualizujPrzyciskMuzyki() {
+  btnMuzyka.textContent = muzykaGra ? "🔊" : "🔇";
+  btnMuzyka.setAttribute("aria-label", muzykaGra ? "Wyłącz muzykę" : "Włącz muzykę");
+}
+
+function startMuzyki() {
+  if (!muzykaPlayer || muzykaGra || !muzykaChciana) return;
+  try {
+    muzykaPlayer.setVolume(35);
+    muzykaPlayer.playVideo();
+  } catch (e) { /* bez internetu strona działa dalej */ }
+}
+
+/* API YouTube ładujemy dynamicznie; jeśli się nie wczyta, przycisk się nie pokaże */
+window.onYouTubeIframeAPIReady = function () {
+  muzykaPlayer = new YT.Player("muzykaPlayer", {
+    width: 1,
+    height: 1,
+    videoId: MUZYKA_VIDEO_ID,
+    playerVars: { autoplay: 0, controls: 0, disablekb: 1, loop: 1, playlist: MUZYKA_VIDEO_ID, playsinline: 1 },
+    events: {
+      onReady: () => { btnMuzyka.classList.add("widoczny"); aktualizujPrzyciskMuzyki(); },
+      onStateChange: (e) => {
+        muzykaGra = e.data === YT.PlayerState.PLAYING;
+        aktualizujPrzyciskMuzyki();
+      }
+    }
+  });
+};
+
+(function () {
+  const skrypt = document.createElement("script");
+  skrypt.src = "https://www.youtube.com/iframe_api";
+  skrypt.onerror = () => { /* offline / zablokowane — cisza */ };
+  document.head.appendChild(skrypt);
+})();
+
+btnMuzyka.addEventListener("click", () => {
+  if (!muzykaPlayer) return;
+  if (muzykaGra) {
+    muzykaChciana = false;
+    muzykaPlayer.pauseVideo();
+  } else {
+    muzykaChciana = true;
+    startMuzyki();
+  }
+});
+
+/* przeglądarki blokują autoodtwarzanie dźwięku — startujemy przy pierwszej
+   interakcji (np. kliknięciu bramy) */
+document.addEventListener("pointerdown", () => startMuzyki(), { capture: true });
+
 /* ---------- płatki sakury ---------- */
 const kontenerPlatkow = document.getElementById("platki");
 
@@ -1023,7 +1117,7 @@ function startGry() {
     zakonczona: false,
     start: Date.now(),
     klatka: 0,
-    predkosc: 3,
+    predkosc: 2.7,
     gracz: { x: 64, y: 200, vy: 0, skoki: 0 },
     ziemia: 200,
     przeszkody: [],
@@ -1051,6 +1145,7 @@ function startGry() {
     czastki: []
   };
   graOverlay.classList.remove("widoczny");
+  ostatniCzasKlatki = 0; /* restart pomiaru czasu klatki */
   aktualizujHudGry();
 
   /* litość duchów: pomijanie po 40 s albo od razu przy reduced motion */
@@ -1111,42 +1206,51 @@ function kolizja(ax, ay, aw, ah, bx, by, bw, bh) {
   return ax < bx + bw && ax + aw > bx && ay < by + bh && ay + ah > by;
 }
 
-function klatkaGry() {
+let ostatniCzasKlatki = 0;
+
+function klatkaGry(ts) {
   if (!gra || !gra.dziala) return;
   const g = gra;
   const c = graCtx;
   const W = graCanvas.width, H = graCanvas.height;
-  g.klatka++;
-  if (g.predkosc < 4.4) g.predkosc += 0.0007;
+
+  /* dt = ile "klatek 60 fps" minęło — dzięki temu gra chodzi tak samo
+     szybko na ekranach 60, 90 i 120 Hz */
+  const dt = ostatniCzasKlatki ? Math.min(3, (ts - ostatniCzasKlatki) / 16.667) : 1;
+  ostatniCzasKlatki = ts;
+
+  g.klatka += dt;
+  if (g.predkosc < 4) g.predkosc += 0.0006 * dt;
 
   /* --- fizyka gracza --- */
-  g.gracz.vy += 0.55;
-  g.gracz.y += g.gracz.vy;
+  g.gracz.vy += 0.55 * dt;
+  g.gracz.y += g.gracz.vy * dt;
   if (g.gracz.y >= g.ziemia) { g.gracz.y = g.ziemia; g.gracz.vy = 0; g.gracz.skoki = 0; }
 
   /* --- spawn --- */
-  if (--g.doPrzeszkody <= 0) {
+  if ((g.doPrzeszkody -= dt) <= 0) {
     g.przeszkody.push({ x: W + 30 });
     g.doPrzeszkody = 80 + Math.random() * 70;
   }
-  if (--g.doPlatka <= 0) {
+  if ((g.doPlatka -= dt) <= 0) {
     g.platki.push({ x: W + 30, y: 95 + Math.random() * 80, faza: Math.random() * 6.28 });
     g.doPlatka = 55 + Math.random() * 35;
   }
 
   /* --- ruch świata (parallax: im bliżej, tym szybciej) --- */
-  g.przeszkody.forEach(p => p.x -= g.predkosc);
-  g.platki.forEach(p => p.x -= g.predkosc);
-  g.gory.forEach(o => { o.x -= g.predkosc * 0.12; if (o.x < -140) o.x = W + 150 + Math.random() * 120; });
-  g.pagody.forEach(o => { o.x -= g.predkosc * 0.25; if (o.x < -80) o.x = W + 90 + Math.random() * 160; });
-  g.torii.forEach(o => { o.x -= g.predkosc * 0.45; if (o.x < -70) o.x = W + 70 + Math.random() * 140; });
-  g.latarnie.forEach(o => { o.x -= g.predkosc * 0.75; if (o.x < -30) o.x = W + 40 + Math.random() * 260; });
-  g.chmury.forEach(o => { o.x -= 0.18; if (o.x < -90) { o.x = W + 90; o.y = 24 + Math.random() * 46; } });
+  const krok = g.predkosc * dt;
+  g.przeszkody.forEach(p => p.x -= krok);
+  g.platki.forEach(p => p.x -= krok);
+  g.gory.forEach(o => { o.x -= krok * 0.12; if (o.x < -140) o.x = W + 150 + Math.random() * 120; });
+  g.pagody.forEach(o => { o.x -= krok * 0.25; if (o.x < -80) o.x = W + 90 + Math.random() * 160; });
+  g.torii.forEach(o => { o.x -= krok * 0.45; if (o.x < -70) o.x = W + 70 + Math.random() * 140; });
+  g.latarnie.forEach(o => { o.x -= krok * 0.75; if (o.x < -30) o.x = W + 40 + Math.random() * 260; });
+  g.chmury.forEach(o => { o.x -= 0.18 * dt; if (o.x < -90) { o.x = W + 90; o.y = 24 + Math.random() * 46; } });
   g.tloPlatki.forEach(p => {
-    p.x += p.vx - g.predkosc * 0.2; p.y += p.vy; p.rot += p.obrot;
+    p.x += (p.vx - g.predkosc * 0.2) * dt; p.y += p.vy * dt; p.rot += p.obrot * dt;
     if (p.y > H || p.x < -12) { p.x = W + Math.random() * 60; p.y = -10; }
   });
-  g.czastki.forEach(cz => { cz.x += cz.vx; cz.y += cz.vy; cz.vy += 0.12; cz.zycie--; });
+  g.czastki.forEach(cz => { cz.x += cz.vx * dt; cz.y += cz.vy * dt; cz.vy += 0.12 * dt; cz.zycie -= dt; });
   g.czastki = g.czastki.filter(cz => cz.zycie > 0);
   g.przeszkody = g.przeszkody.filter(p => p.x > -40);
   g.platki = g.platki.filter(p => p.x > -40);
