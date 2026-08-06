@@ -839,6 +839,32 @@
 
   .final-karta p { margin-top: 16px; font-size: 1rem; }
 
+  /* ---------- okno pieczęci goshuin ---------- */
+  .goshuin-tlo {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 16px;
+    padding: 20px;
+    background: rgba(10, 12, 20, 0.85);
+    backdrop-filter: blur(5px);
+  }
+
+  .goshuin-tlo.widoczne { display: flex; animation: pojawienie 0.4s ease both; }
+
+  .goshuin-tlo img {
+    max-width: min(380px, 88vw);
+    max-height: 66vh;
+    border-radius: 6px;
+    box-shadow: 0 18px 60px rgba(0, 0, 0, 0.7), 0 0 40px rgba(217, 164, 65, 0.15);
+  }
+
+  .goshuin-przyciski { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+
   .odliczanie {
     font-family: "Playfair Display", "Shippori Mincho", serif;
     color: var(--torii);
@@ -858,6 +884,14 @@
 <body>
 
 <div class="ksiezyc" aria-hidden="true"></div>
+
+<div class="goshuin-tlo" id="goshuinOkno" role="dialog" aria-label="Twoja pieczęć goshuin">
+  <img id="goshuinObraz" alt="Pieczęć goshuin ze Świątyni Przeznaczenia">
+  <div class="goshuin-przyciski">
+    <button class="btn-glowny" id="btnGoshuinPobierz">Zapisz jako zdjęcie 📥</button>
+    <button class="btn-ghost" id="btnGoshuinZamknij">Zamknij</button>
+  </div>
+</div>
 <div id="muzykaPlayer" aria-hidden="true"></div>
 <button class="btn-muzyka" id="btnMuzyka" aria-label="Włącz lub wyłącz muzykę" title="muzyka">♪</button>
 <div class="platki" id="platki" aria-hidden="true"></div>
@@ -1053,7 +1087,7 @@
       <p class="odliczanie" id="odliczanie"></p>
       <div style="display:flex; gap:10px; flex-wrap:wrap; justify-content:center; margin-top:18px;">
         <button class="btn-glowny" id="btnKopiujFinal" style="font-size:0.95rem; padding:12px 22px;">Skopiuj 大吉 📋</button>
-        <button class="btn-glowny" id="btnGoshuin" style="font-size:0.95rem; padding:12px 22px; background:linear-gradient(135deg,#b8860b 0%,#8a6420 100%); box-shadow:0 6px 22px rgba(217,164,65,0.35);">Pobierz pieczęć 御朱印</button>
+        <button class="btn-glowny" id="btnGoshuin" style="font-size:0.95rem; padding:12px 22px; background:linear-gradient(135deg,#b8860b 0%,#8a6420 100%); box-shadow:0 6px 22px rgba(217,164,65,0.35);">Pokaż pieczęć 御朱印</button>
       </div>
     </div>
   </section>
@@ -2174,10 +2208,26 @@ btnPieczec.addEventListener("click", () => {
     c.font = "18px 'Lato', 'Zen Kaku Gothic New', sans-serif";
     c.fillText("en-musubi — związanie losów · " + new Date().toLocaleDateString("pl-PL"), 310, 780);
 
+    /* pokazujemy pieczęć na ekranie; pobranie to osobny przycisk */
+    const dataUrl = k.toDataURL("image/png");
+    document.getElementById("goshuinObraz").src = dataUrl;
+    document.getElementById("btnGoshuinPobierz").dataset.url = dataUrl;
+    document.getElementById("goshuinOkno").classList.add("widoczne");
+  });
+
+  document.getElementById("btnGoshuinPobierz").addEventListener("click", (e) => {
     const a = document.createElement("a");
-    a.href = k.toDataURL("image/png");
+    a.href = e.currentTarget.dataset.url;
     a.download = "goshuin-swiatynia-przeznaczenia.png";
     a.click();
+  });
+
+  document.getElementById("btnGoshuinZamknij").addEventListener("click", () => {
+    document.getElementById("goshuinOkno").classList.remove("widoczne");
+  });
+
+  document.getElementById("goshuinOkno").addEventListener("click", (e) => {
+    if (e.target === e.currentTarget) e.currentTarget.classList.remove("widoczne");
   });
 
   /* przycisk kopiowania 大吉 — żeby mogła od razu wkleić i wysłać */
