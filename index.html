@@ -928,8 +928,10 @@ let muzykaGra = false;
 let muzykaChciana = true; /* domyślnie włączona — wystartuje przy pierwszym dotknięciu strony */
 
 function aktualizujPrzyciskMuzyki() {
-  btnMuzyka.textContent = muzykaGra ? "🔊" : "🔇";
-  btnMuzyka.setAttribute("aria-label", muzykaGra ? "Wyłącz muzykę" : "Włącz muzykę");
+  /* ikona pokazuje zamiar (włączona/wyłączona), nie stan odtwarzacza —
+     przed pierwszym dotknięciem strony muzyka technicznie jeszcze nie gra */
+  btnMuzyka.textContent = muzykaChciana ? "🔊" : "🔇";
+  btnMuzyka.setAttribute("aria-label", muzykaChciana ? "Wyłącz muzykę" : "Włącz muzykę");
 }
 
 function startMuzyki() {
@@ -966,13 +968,10 @@ window.onYouTubeIframeAPIReady = function () {
 
 btnMuzyka.addEventListener("click", () => {
   if (!muzykaPlayer) return;
-  if (muzykaGra) {
-    muzykaChciana = false;
-    muzykaPlayer.pauseVideo();
-  } else {
-    muzykaChciana = true;
-    startMuzyki();
-  }
+  muzykaChciana = !muzykaChciana;
+  if (muzykaChciana) startMuzyki();
+  else if (muzykaGra) muzykaPlayer.pauseVideo();
+  aktualizujPrzyciskMuzyki();
 });
 
 /* przeglądarki blokują autoodtwarzanie dźwięku — startujemy przy pierwszej
