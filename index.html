@@ -1170,7 +1170,7 @@ formBariery.addEventListener("submit", async (e) => {
 });
 
 /* ---------- muzyka w tle (YouTube, samo audio) ---------- */
-const MUZYKA_VIDEO_ID = "kdYWYNsOGH0";
+const MUZYKA_VIDEO_ID = "Ja5aE7rl2p8";
 const btnMuzyka = document.getElementById("btnMuzyka");
 let muzykaPlayer = null;
 let muzykaGra = false;
@@ -1223,9 +1223,8 @@ btnMuzyka.addEventListener("click", () => {
   aktualizujPrzyciskMuzyki();
 });
 
-/* przeglądarki blokują autoodtwarzanie dźwięku — startujemy przy pierwszej
-   interakcji (np. kliknięciu bramy) */
-document.addEventListener("pointerdown", () => startMuzyki(), { capture: true });
+/* muzyka startuje dopiero, gdy po gongu przejdzie przez bramę torii
+   (kliknięcie bramy to gest użytkownika, więc przeglądarka pozwala zagrać) */
 
 /* ---------- płatki sakury ---------- */
 const kontenerPlatkow = document.getElementById("platki");
@@ -1318,6 +1317,7 @@ document.getElementById("btnTorii").addEventListener("click", () => {
     hintEtap1.textContent = "🔔 najpierw obudź duchy — uderz w dzwon!";
     return;
   }
+  startMuzyki();
   pokazEtap(2);
 });
 
