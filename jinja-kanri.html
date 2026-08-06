@@ -98,11 +98,13 @@
 
   .btn-cichy:hover { background: rgba(245, 239, 226, 0.13); color: var(--tekst); }
 
-  input[type="password"], input[type="search"], select {
+  input[type="password"], input[type="search"], input[type="text"], select {
     background: rgba(245, 239, 226, 0.06);
     border: 1px solid rgba(233, 228, 216, 0.25);
     padding: 9px 12px;
   }
+
+  input::placeholder { color: rgba(169, 162, 148, 0.6); }
 
   select { appearance: auto; }
   select option { background: var(--noc2); color: var(--tekst); }
@@ -340,9 +342,14 @@
     font-size: 0.8rem;
     color: var(--zloto);
     background: rgba(217, 164, 65, 0.1);
-    padding: 1px 8px;
+    padding: 3px 10px;
     border-radius: 6px;
+    border: none;
+    cursor: pointer;
   }
+
+  .gosc-dane .klucz:hover { background: rgba(217, 164, 65, 0.22); }
+  .gosc-dane .klucz.skopiowany { color: #9fd9a0; background: rgba(120, 200, 130, 0.15); }
 
   .gosc-akcje { display: flex; gap: 6px; flex: 0 0 auto; }
   .gosc-akcje button { padding: 7px 10px; font-size: 0.85rem; }
@@ -992,7 +999,7 @@ async function odswiezGosci() {
         ? '<img class="gosc-miniatura" src="/api/awatar?gosc=' + encodeURIComponent(g.id) + '&t=' + Date.now() + '" alt="">'
         : '<div class="gosc-miniatura-brak">🦊</div>') +
       '<div class="gosc-dane"><span class="imie">' + esc(g.imie) + '</span> ' +
-      '<span class="klucz">🗝️ ' + esc(g.haslo) + '</span></div>' +
+      '<button class="klucz" data-akcja="kopiuj" data-haslo="' + esc(g.haslo) + '" title="Kliknij, żeby skopiować słowo-klucz">🗝️ ' + esc(g.haslo) + '</button></div>' +
       '<div class="gosc-akcje">' +
       '<button class="btn-cichy" data-akcja="zdjecie" data-id="' + g.id + '" title="Wgraj zdjęcie do gry">📷</button>' +
       (g.maAwatar ? '<button class="btn-cichy" data-akcja="usun-zdjecie" data-id="' + g.id + '" title="Przywróć liska">🦊</button>' : '') +
@@ -1006,6 +1013,29 @@ listaGosci.addEventListener("click", async (e) => {
   const btn = e.target.closest("button[data-akcja]");
   if (!btn) return;
   const id = btn.dataset.id;
+
+  if (btn.dataset.akcja === "kopiuj") {
+    const haslo = btn.dataset.haslo;
+    const oryginalny = btn.textContent;
+    const potwierdz = () => {
+      btn.textContent = "✓ skopiowano!";
+      btn.classList.add("skopiowany");
+      setTimeout(() => { btn.textContent = oryginalny; btn.classList.remove("skopiowany"); }, 1600);
+    };
+    try {
+      await navigator.clipboard.writeText(haslo);
+      potwierdz();
+    } catch (err) {
+      /* starsze przeglądarki / http */
+      const pole = document.createElement("textarea");
+      pole.value = haslo;
+      document.body.appendChild(pole);
+      pole.select();
+      try { document.execCommand("copy"); potwierdz(); } catch (e2) {}
+      pole.remove();
+    }
+    return;
+  }
 
   if (btn.dataset.akcja === "zdjecie") {
     awatarDlaGoscia = id;
