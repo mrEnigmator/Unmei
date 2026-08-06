@@ -466,6 +466,70 @@
 
   #btnDalejEma { margin-top: 34px; }
 
+  /* ================= ETAP: GRA 試練 ================= */
+  .gra-otoczka {
+    margin-top: 30px;
+    width: min(440px, 94vw);
+    position: relative;
+  }
+
+  #graCanvas {
+    display: block;
+    width: 100%;
+    border-radius: 14px;
+    border: 1px solid rgba(217, 164, 65, 0.35);
+    background: linear-gradient(180deg, #0c0f19 0%, #1a1f30 70%, #241b2c 100%);
+    touch-action: manipulation;
+    cursor: pointer;
+  }
+
+  .gra-hud {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 10px;
+    font-size: 0.95rem;
+    color: var(--zloto);
+    letter-spacing: 0.04em;
+  }
+
+  .gra-overlay {
+    position: absolute;
+    inset: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 6px;
+    background: rgba(16, 19, 31, 0.72);
+    border-radius: 14px;
+    backdrop-filter: blur(2px);
+  }
+
+  .gra-overlay.widoczny { display: flex; animation: pojawienie 0.5s ease both; }
+
+  .gra-overlay .duzy {
+    font-family: "Shippori Mincho", serif;
+    font-size: 2rem;
+    font-weight: 800;
+    color: var(--zloto);
+    text-shadow: 0 0 24px rgba(217, 164, 65, 0.5);
+  }
+
+  .gra-overlay .maly { color: var(--sakura); font-size: 0.95rem; }
+
+  #btnPominGre {
+    margin-top: 16px;
+    display: none;
+    background: transparent;
+    border: none;
+    color: var(--tekst-przyg);
+    text-decoration: underline;
+    font-size: 0.85rem;
+  }
+
+  #btnPominGre.widoczny { display: inline-block; }
+
   /* ================= ETAP 5: KALENDARZ ================= */
   .kalendarz {
     margin-top: 34px;
@@ -705,6 +769,28 @@
     </div>
   </section>
 
+  <!-- ============ ETAP: GRA — PRÓBA ODWAGI ============ -->
+  <section class="etap" id="etapGra" aria-label="Próba odwagi — mini-gra">
+    <div class="kanji-naglowek" style="font-size:1.9rem;">試練</div>
+    <div class="romaji">shi-ren</div>
+    <h2 style="margin-top:16px;">Próba odwagi</h2>
+    <p class="podtytul">Zanim zawiesisz życzenie, duchy świątyni sprawdzą Twoją zwinność. Pomóż liskowi zebrać <strong>7 płatków sakury</strong> — dotknij ekranu (albo naciśnij spację), żeby skoczyć. Podwójny skok działa! Uważaj na lampiony.</p>
+
+    <div class="gra-otoczka">
+      <canvas id="graCanvas" width="440" height="250" aria-label="Gra: lisek zbiera płatki sakury"></canvas>
+      <div class="gra-overlay" id="graOverlay">
+        <div class="duzy" id="graOverlayTytul">合格</div>
+        <div class="maly" id="graOverlayTekst">Próba zaliczona! Duchy otwierają dalszą drogę…</div>
+      </div>
+      <div class="gra-hud">
+        <span id="licznikPlatkowGry">🌸 0 / 7</span>
+        <span id="graPodpowiedz">dotknij, żeby skoczyć</span>
+      </div>
+    </div>
+
+    <button id="btnPominGre">duchy litują się — pomiń próbę</button>
+  </section>
+
   <!-- ============ ETAP 4: TABLICZKI EMA ============ -->
   <section class="etap" id="etap4" aria-label="Tabliczki ema">
     <div class="kanji-naglowek" style="font-size:1.9rem;">絵馬</div>
@@ -895,7 +981,218 @@ btnOdrzuc.addEventListener("mouseenter", ucieczka);
 btnOdrzuc.addEventListener("touchstart", (e) => { e.preventDefault(); ucieczka(); }, { passive: false });
 btnOdrzuc.addEventListener("click", (e) => { e.preventDefault(); ucieczka(); });
 
-btnPrzyjmij.addEventListener("click", () => pokazEtap(4));
+btnPrzyjmij.addEventListener("click", () => { pokazEtap("Gra"); startGry(); });
+
+/* ============ ETAP: GRA — PRÓBA ODWAGI ============ */
+const CEL_PLATKOW_GRY = 7;
+const graCanvas = document.getElementById("graCanvas");
+const graCtx = graCanvas.getContext("2d");
+const graOverlay = document.getElementById("graOverlay");
+const licznikPlatkowGry = document.getElementById("licznikPlatkowGry");
+const btnPominGre = document.getElementById("btnPominGre");
+
+let gra = null; /* stan bieżącej rozgrywki */
+
+function startGry() {
+  gra = {
+    dziala: true,
+    zakonczona: false,
+    start: Date.now(),
+    klatka: 0,
+    predkosc: 3,
+    gracz: { x: 64, y: 200, vy: 0, skoki: 0 },
+    ziemia: 200,
+    przeszkody: [],
+    platki: [],
+    doPrzeszkody: 90,
+    doPlatka: 50,
+    zebrane: 0,
+    trafienia: 0,
+    nietykalnoscDo: 0,
+    torii: [{ x: 150 }, { x: 380 }] /* dekoracyjne bramy w tle */
+  };
+  graOverlay.classList.remove("widoczny");
+  aktualizujHudGry();
+
+  /* litość duchów: pomijanie po 40 s albo od razu przy reduced motion */
+  if (reducedMotion) btnPominGre.classList.add("widoczny");
+  else setTimeout(() => { if (gra && !gra.zakonczona) btnPominGre.classList.add("widoczny"); }, 40000);
+
+  requestAnimationFrame(klatkaGry);
+}
+
+function aktualizujHudGry() {
+  licznikPlatkowGry.textContent = "🌸 " + gra.zebrane + " / " + CEL_PLATKOW_GRY;
+}
+
+function skokGracza() {
+  if (!gra || gra.zakonczona) return;
+  if (gra.gracz.skoki < 2) {
+    gra.gracz.vy = -9.6;
+    gra.gracz.skoki++;
+  }
+}
+
+graCanvas.addEventListener("pointerdown", (e) => { e.preventDefault(); skokGracza(); });
+document.addEventListener("keydown", (e) => {
+  if (!document.getElementById("etapGra").classList.contains("aktywny")) return;
+  if (e.code === "Space" || e.code === "ArrowUp") { e.preventDefault(); skokGracza(); }
+});
+
+btnPominGre.addEventListener("click", () => {
+  if (!gra || gra.zakonczona) return;
+  zakonczGre(true);
+});
+
+function zakonczGre(pominieta) {
+  gra.zakonczona = true;
+  gra.dziala = false;
+  btnPominGre.classList.remove("widoczny");
+
+  document.getElementById("graOverlayTytul").textContent = pominieta ? "慈悲" : "合格";
+  document.getElementById("graOverlayTekst").textContent = pominieta
+    ? "Duchy machnęły ręką. Droga otwarta…"
+    : "Próba zaliczona! Duchy otwierają dalszą drogę…";
+  graOverlay.classList.add("widoczny");
+
+  wyslijZdarzenie({
+    typ: "etap",
+    etap: "gra-ukonczona",
+    czasGrySekundy: Math.round((Date.now() - gra.start) / 1000),
+    trafieniaWLampiony: gra.trafienia,
+    pominieta: !!pominieta
+  });
+
+  setTimeout(() => pokazEtap(4), 1800);
+}
+
+function kolizja(ax, ay, aw, ah, bx, by, bw, bh) {
+  return ax < bx + bw && ax + aw > bx && ay < by + bh && ay + ah > by;
+}
+
+function klatkaGry() {
+  if (!gra || !gra.dziala) return;
+  const g = gra;
+  const c = graCtx;
+  const W = graCanvas.width, H = graCanvas.height;
+  g.klatka++;
+  if (g.predkosc < 4.4) g.predkosc += 0.0007;
+
+  /* --- fizyka gracza --- */
+  g.gracz.vy += 0.55;
+  g.gracz.y += g.gracz.vy;
+  if (g.gracz.y >= g.ziemia) { g.gracz.y = g.ziemia; g.gracz.vy = 0; g.gracz.skoki = 0; }
+
+  /* --- spawn --- */
+  if (--g.doPrzeszkody <= 0) {
+    g.przeszkody.push({ x: W + 30 });
+    g.doPrzeszkody = 80 + Math.random() * 70;
+  }
+  if (--g.doPlatka <= 0) {
+    g.platki.push({ x: W + 30, y: 95 + Math.random() * 80, faza: Math.random() * 6.28 });
+    g.doPlatka = 55 + Math.random() * 35;
+  }
+
+  /* --- ruch świata --- */
+  g.przeszkody.forEach(p => p.x -= g.predkosc);
+  g.platki.forEach(p => p.x -= g.predkosc);
+  g.torii.forEach(t => { t.x -= g.predkosc * 0.4; if (t.x < -60) t.x = W + 60 + Math.random() * 120; });
+  g.przeszkody = g.przeszkody.filter(p => p.x > -40);
+  g.platki = g.platki.filter(p => p.x > -40);
+
+  /* --- kolizje --- */
+  const gx = g.gracz.x - 14, gy = g.gracz.y - 26, gw = 28, gh = 28;
+
+  for (const p of g.platki) {
+    if (!p.zebrany && kolizja(gx, gy, gw, gh, p.x - 11, p.y - 11 + Math.sin(g.klatka / 12 + p.faza) * 6, 22, 22)) {
+      p.zebrany = true;
+      g.zebrane++;
+      aktualizujHudGry();
+      if (g.zebrane >= CEL_PLATKOW_GRY) { rysujGre(); zakonczGre(false); return; }
+    }
+  }
+  g.platki = g.platki.filter(p => !p.zebrany);
+
+  if (g.klatka > g.nietykalnoscDo) {
+    for (const p of g.przeszkody) {
+      if (kolizja(gx, gy, gw, gh, p.x - 10, g.ziemia - 22, 20, 26)) {
+        g.trafienia++;
+        if (g.zebrane > 0) { g.zebrane--; aktualizujHudGry(); }
+        g.nietykalnoscDo = g.klatka + 70; /* chwila nietykalności po trafieniu */
+        break;
+      }
+    }
+  }
+
+  rysujGre();
+  requestAnimationFrame(klatkaGry);
+}
+
+function rysujGre() {
+  const g = gra;
+  const c = graCtx;
+  const W = graCanvas.width, H = graCanvas.height;
+
+  c.clearRect(0, 0, W, H);
+
+  /* księżyc */
+  c.beginPath();
+  c.arc(W - 60, 46, 20, 0, 6.29);
+  c.fillStyle = "rgba(244, 233, 200, 0.9)";
+  c.shadowColor = "rgba(244, 233, 200, 0.6)";
+  c.shadowBlur = 24;
+  c.fill();
+  c.shadowBlur = 0;
+
+  /* bramy torii w tle */
+  c.fillStyle = "rgba(199, 62, 58, 0.28)";
+  for (const t of g.torii) {
+    c.fillRect(t.x - 22, 120, 7, 82);
+    c.fillRect(t.x + 15, 120, 7, 82);
+    c.fillRect(t.x - 30, 112, 60, 9);
+    c.fillRect(t.x - 24, 132, 48, 6);
+  }
+
+  /* ziemia */
+  c.strokeStyle = "rgba(217, 164, 65, 0.5)";
+  c.lineWidth = 2;
+  c.beginPath();
+  c.moveTo(0, g.ziemia + 6);
+  c.lineTo(W, g.ziemia + 6);
+  c.stroke();
+  c.strokeStyle = "rgba(217, 164, 65, 0.18)";
+  c.setLineDash([6, 10]);
+  c.beginPath();
+  c.moveTo(-(g.klatka * g.predkosc % 16), g.ziemia + 16);
+  c.lineTo(W, g.ziemia + 16);
+  c.stroke();
+  c.setLineDash([]);
+
+  c.textAlign = "center";
+  c.textBaseline = "alphabetic";
+
+  /* płatki */
+  c.font = "22px serif";
+  for (const p of g.platki) {
+    c.fillText("🌸", p.x, p.y + Math.sin(g.klatka / 12 + p.faza) * 6 + 8);
+  }
+
+  /* lampiony */
+  c.font = "26px serif";
+  for (const p of g.przeszkody) {
+    c.fillText("🏮", p.x, g.ziemia + 4);
+  }
+
+  /* lisek (miga po trafieniu) */
+  if (g.klatka > g.nietykalnoscDo || Math.floor(g.klatka / 5) % 2 === 0) {
+    c.font = "30px serif";
+    c.save();
+    c.translate(g.gracz.x, g.gracz.y);
+    c.scale(-1, 1); /* lisek patrzy w prawo, w kierunku biegu */
+    c.fillText("🦊", 0, 0);
+    c.restore();
+  }
+}
 
 /* ============ ETAP 4: ema ============ */
 let wybranaEma = null;

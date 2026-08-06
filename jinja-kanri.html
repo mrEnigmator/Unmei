@@ -20,6 +20,9 @@
     --zloto: #d9a441;
     --tekst: #e9e4d8;
     --tekst-przyg: #a9a294;
+    --karta-tlo: rgba(16, 19, 31, 0.6);
+    --karta-brzeg: rgba(217, 164, 65, 0.22);
+    --linia: rgba(233, 228, 216, 0.1);
   }
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -31,50 +34,48 @@
     color: var(--tekst);
     font-family: "Zen Kaku Gothic New", sans-serif;
     line-height: 1.6;
-    padding: 28px 16px 64px;
+    padding: 24px 14px 64px;
   }
 
-  h1, h2, .kanji { font-family: "Shippori Mincho", serif; }
+  h1, h2, h3, .kanji { font-family: "Shippori Mincho", serif; }
 
-  .kontener { max-width: 720px; margin: 0 auto; }
+  .kontener { max-width: 860px; margin: 0 auto; }
 
-  header { text-align: center; margin-bottom: 30px; }
-
-  header .kanji {
-    font-size: 2rem;
-    color: var(--sakura);
-    letter-spacing: 0.3em;
-    margin-left: 0.3em;
-    text-shadow: 0 0 20px rgba(246, 200, 216, 0.4);
-  }
-
-  header .romaji {
-    color: var(--tekst-przyg);
-    font-size: 0.8rem;
-    letter-spacing: 0.35em;
-  }
-
-  header h1 { font-size: 1.3rem; margin-top: 10px; }
-
-  .karta {
-    background: rgba(16, 19, 31, 0.6);
-    border: 1px solid rgba(217, 164, 65, 0.25);
-    border-radius: 14px;
-    padding: 22px 20px;
+  /* ---------- nagłówek ---------- */
+  .naglowek {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    flex-wrap: wrap;
     margin-bottom: 20px;
-    backdrop-filter: blur(4px);
   }
 
-  button, input {
+  .naglowek .marka { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+
+  .naglowek .kanji {
+    font-size: 1.5rem;
+    color: var(--sakura);
+    letter-spacing: 0.2em;
+    text-shadow: 0 0 18px rgba(246, 200, 216, 0.4);
+  }
+
+  .naglowek .tytul { font-size: 1rem; color: var(--papier); font-weight: 700; }
+
+  .naglowek .akcje { display: flex; align-items: center; gap: 10px; }
+
+  /* ---------- przyciski / pola ---------- */
+  button, input, select {
     font-family: inherit;
-    font-size: 1rem;
-    border-radius: 10px;
+    font-size: 0.95rem;
+    border-radius: 9px;
+    color: var(--tekst);
   }
 
-  button { cursor: pointer; border: none; transition: transform 0.2s ease, box-shadow 0.2s ease; }
+  button { cursor: pointer; border: none; transition: transform 0.15s ease, background 0.2s ease; }
 
-  button:focus-visible, input:focus-visible {
-    outline: 3px solid var(--zloto);
+  button:focus-visible, input:focus-visible, select:focus-visible {
+    outline: 2px solid var(--zloto);
     outline-offset: 2px;
   }
 
@@ -82,128 +83,279 @@
     background: linear-gradient(135deg, var(--torii) 0%, var(--torii-ciemny) 100%);
     color: #fff7ef;
     font-weight: 700;
-    padding: 12px 24px;
-    box-shadow: 0 6px 20px rgba(199, 62, 58, 0.4);
+    padding: 9px 18px;
+    box-shadow: 0 4px 16px rgba(199, 62, 58, 0.35);
   }
 
-  .btn-glowny:hover { transform: translateY(-2px); }
+  .btn-glowny:hover { transform: translateY(-1px); }
+
+  .btn-cichy {
+    background: rgba(245, 239, 226, 0.07);
+    border: 1px solid var(--linia);
+    color: var(--tekst-przyg);
+    padding: 8px 14px;
+  }
+
+  .btn-cichy:hover { background: rgba(245, 239, 226, 0.13); color: var(--tekst); }
+
+  input[type="password"], input[type="search"], select {
+    background: rgba(245, 239, 226, 0.06);
+    border: 1px solid rgba(233, 228, 216, 0.25);
+    padding: 9px 12px;
+  }
+
+  select { appearance: auto; }
+  select option { background: var(--noc2); color: var(--tekst); }
+
+  /* ---------- karty ---------- */
+  .karta {
+    background: var(--karta-tlo);
+    border: 1px solid var(--karta-brzeg);
+    border-radius: 14px;
+    padding: 20px;
+    margin-bottom: 16px;
+    backdrop-filter: blur(4px);
+  }
+
+  .karta h3 {
+    font-size: 0.85rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--tekst-przyg);
+    margin-bottom: 14px;
+    font-family: "Zen Kaku Gothic New", sans-serif;
+    font-weight: 700;
+  }
 
   /* ---------- logowanie ---------- */
-  #widokLogowania { max-width: 380px; margin: 10vh auto 0; text-align: center; }
-
-  #widokLogowania input {
-    width: 100%;
-    padding: 13px 16px;
-    margin: 18px 0 14px;
-    background: rgba(245, 239, 226, 0.06);
-    border: 1px solid rgba(233, 228, 216, 0.3);
-    color: var(--tekst);
-  }
-
+  #widokLogowania { max-width: 380px; margin: 12vh auto 0; text-align: center; }
+  #widokLogowania .kanji { font-size: 2rem; color: var(--sakura); letter-spacing: 0.25em; }
+  #widokLogowania .romaji { color: var(--tekst-przyg); font-size: 0.8rem; letter-spacing: 0.3em; margin-bottom: 20px; }
+  #widokLogowania input { width: 100%; margin: 14px 0; }
   #bladLogowania { color: #e88; font-size: 0.9rem; min-height: 1.5em; margin-top: 10px; }
 
-  /* ---------- status ---------- */
-  .status-duzy {
-    text-align: center;
-    padding: 30px 20px;
+  /* ---------- zakładki ---------- */
+  .zakladki {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 18px;
+    border-bottom: 1px solid var(--linia);
+    padding-bottom: 0;
+    overflow-x: auto;
   }
 
-  .status-duzy .etykieta {
+  .zakladka {
+    background: transparent;
     color: var(--tekst-przyg);
-    font-size: 0.85rem;
-    letter-spacing: 0.15em;
-    text-transform: uppercase;
+    padding: 10px 18px 12px;
+    border-radius: 10px 10px 0 0;
+    border-bottom: 2px solid transparent;
+    white-space: nowrap;
+    font-weight: 500;
   }
 
-  .status-duzy .wynik {
-    font-family: "Shippori Mincho", serif;
-    font-size: 1.7rem;
-    font-weight: 800;
-    margin-top: 10px;
+  .zakladka:hover { color: var(--tekst); }
+
+  .zakladka.aktywna {
+    color: var(--zloto);
+    border-bottom-color: var(--zloto);
+    font-weight: 700;
   }
 
-  .status-duzy .wynik.tak { color: var(--zloto); text-shadow: 0 0 24px rgba(217, 164, 65, 0.4); }
+  .panel-zakladki { display: none; }
+  .panel-zakladki.aktywny { display: block; }
+
+  /* ---------- przegląd: status ---------- */
+  .status-duzy { text-align: center; padding: 26px 18px; }
+  .status-duzy .etykieta { color: var(--tekst-przyg); font-size: 0.8rem; letter-spacing: 0.16em; text-transform: uppercase; }
+  .status-duzy .wynik { font-family: "Shippori Mincho", serif; font-size: 1.65rem; font-weight: 800; margin-top: 8px; }
+  .status-duzy .wynik.tak { color: var(--zloto); text-shadow: 0 0 22px rgba(217, 164, 65, 0.4); }
   .status-duzy .wynik.nie { color: var(--tekst-przyg); }
+  .status-duzy .szczegoly { margin-top: 12px; color: var(--sakura); font-size: 1.02rem; }
+  .status-duzy .kiedy { margin-top: 5px; color: var(--tekst-przyg); font-size: 0.83rem; }
 
-  .status-duzy .szczegoly { margin-top: 14px; color: var(--sakura); font-size: 1.05rem; }
-  .status-duzy .kiedy { margin-top: 6px; color: var(--tekst-przyg); font-size: 0.85rem; }
-
-  /* ---------- statystyki ---------- */
-  .statystyki {
+  /* ---------- przegląd: kafle ---------- */
+  .kafle {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
     gap: 12px;
   }
 
-  .stat {
-    text-align: center;
-    padding: 16px 8px;
+  .kafel {
     background: rgba(245, 239, 226, 0.04);
-    border-radius: 10px;
+    border: 1px solid var(--linia);
+    border-radius: 11px;
+    padding: 14px 12px;
+    text-align: center;
   }
 
-  .stat .liczba {
+  .kafel .liczba {
     font-family: "Shippori Mincho", serif;
-    font-size: 1.9rem;
+    font-size: 1.55rem;
     font-weight: 800;
     color: var(--zloto);
+    line-height: 1.3;
   }
 
-  .stat .opis { font-size: 0.78rem; color: var(--tekst-przyg); margin-top: 4px; }
+  .kafel .opis { font-size: 0.75rem; color: var(--tekst-przyg); margin-top: 3px; }
 
-  .zart { text-align: center; color: var(--sakura); font-size: 0.88rem; font-style: italic; margin-top: 14px; }
+  /* ---------- przegląd: droga przez świątynię ---------- */
+  .droga { list-style: none; }
+
+  .droga li {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 9px 0;
+    border-bottom: 1px dashed var(--linia);
+    font-size: 0.92rem;
+  }
+
+  .droga li:last-child { border-bottom: none; }
+
+  .droga .znacznik {
+    flex: 0 0 auto;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    border: 2px solid var(--linia);
+    color: var(--tekst-przyg);
+  }
+
+  .droga li.zaliczony .znacznik {
+    background: radial-gradient(circle at 40% 35%, #d85450 0%, var(--torii) 60%, var(--torii-ciemny) 100%);
+    border-color: transparent;
+    color: #fff;
+  }
+
+  .droga li.zaliczony .nazwa { color: var(--tekst); }
+  .droga .nazwa { flex: 1; color: var(--tekst-przyg); }
+  .droga .detal { color: var(--tekst-przyg); font-size: 0.8rem; }
+  .droga li.zaliczony .detal { color: var(--zloto); }
+
+  .zart { text-align: center; color: var(--sakura); font-size: 0.86rem; font-style: italic; margin-top: 12px; }
 
   /* ---------- oś czasu ---------- */
-  h2 { font-size: 1.1rem; margin-bottom: 14px; color: var(--papier); }
+  .dzien-separator {
+    margin: 16px 0 6px;
+    color: var(--zloto);
+    font-size: 0.78rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    font-weight: 700;
+  }
 
   .zdarzenie {
     display: flex;
     gap: 12px;
-    padding: 10px 0;
-    border-bottom: 1px dashed rgba(233, 228, 216, 0.12);
+    padding: 9px 0;
+    border-bottom: 1px dashed var(--linia);
     font-size: 0.92rem;
+    align-items: baseline;
   }
 
   .zdarzenie:last-child { border-bottom: none; }
-
   .zdarzenie .ikona { flex: 0 0 auto; width: 1.6em; text-align: center; }
   .zdarzenie .opis { flex: 1; }
-  .zdarzenie .czas { flex: 0 0 auto; color: var(--tekst-przyg); font-size: 0.8rem; white-space: nowrap; }
+  .zdarzenie .czas { flex: 0 0 auto; color: var(--tekst-przyg); font-size: 0.78rem; white-space: nowrap; }
 
-  .pasek-akcji {
+  /* ---------- logi ---------- */
+  .logi-pasek {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-    gap: 12px;
+    gap: 10px;
     flex-wrap: wrap;
+    margin-bottom: 14px;
+    align-items: center;
   }
 
-  .pasek-akcji .info { color: var(--tekst-przyg); font-size: 0.8rem; }
+  .logi-pasek input[type="search"] { flex: 1; min-width: 160px; }
 
-  .puste { color: var(--tekst-przyg); text-align: center; padding: 18px 0; }
+  .tabela-otoczka { overflow-x: auto; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+
+  th {
+    text-align: left;
+    color: var(--tekst-przyg);
+    font-weight: 700;
+    font-size: 0.72rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--karta-brzeg);
+    white-space: nowrap;
+  }
+
+  td {
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--linia);
+    vertical-align: top;
+  }
+
+  tr.wiersz-logu { cursor: pointer; }
+  tr.wiersz-logu:hover td { background: rgba(245, 239, 226, 0.04); }
+
+  .badge {
+    display: inline-block;
+    padding: 2px 9px;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+  }
+
+  .badge.wizyta { background: rgba(120, 160, 220, 0.18); color: #a8c4ee; }
+  .badge.etap { background: rgba(217, 164, 65, 0.16); color: var(--zloto); }
+  .badge.proba { background: rgba(246, 200, 216, 0.15); color: var(--sakura); }
+  .badge.final { background: rgba(199, 62, 58, 0.25); color: #f0a09d; }
+
+  .czas-abs { white-space: nowrap; color: var(--tekst); }
+  .czas-rel { display: block; color: var(--tekst-przyg); font-size: 0.72rem; }
+
+  tr.szczegoly-logu td {
+    background: rgba(0, 0, 0, 0.25);
+    padding: 10px 14px;
+  }
+
+  tr.szczegoly-logu pre {
+    font-family: ui-monospace, "Cascadia Code", Menlo, monospace;
+    font-size: 0.75rem;
+    color: var(--sakura);
+    white-space: pre-wrap;
+    word-break: break-all;
+  }
+
+  .puste { color: var(--tekst-przyg); text-align: center; padding: 22px 0; }
+
+  .stopka-odswiezania {
+    text-align: center;
+    color: var(--tekst-przyg);
+    font-size: 0.78rem;
+    margin-top: 6px;
+  }
 
   @media (max-width: 480px) {
-    .statystyki { grid-template-columns: 1fr; }
+    th:nth-child(4), td:nth-child(4) { display: none; } /* chowamy kolumnę urządzenia na wąskich ekranach */
   }
 </style>
 </head>
 <body>
 <div class="kontener">
 
-  <header>
-    <div class="kanji">神社管理</div>
-    <div class="romaji">jinja-kanri</div>
-    <h1>Panel Świątyni Przeznaczenia</h1>
-  </header>
-
   <!-- ---------- LOGOWANIE ---------- -->
   <div id="widokLogowania">
+    <div class="kanji">神社管理</div>
+    <div class="romaji">jinja-kanri</div>
     <div class="karta">
       <p>Podaj hasło strażnika świątyni:</p>
       <form id="formLogowania">
         <input type="password" id="poleHasla" autocomplete="current-password" aria-label="Hasło" required>
-        <button type="submit" class="btn-glowny">Wejdź ⛩️</button>
+        <button type="submit" class="btn-glowny" style="width:100%;">Wejdź ⛩️</button>
       </form>
       <p id="bladLogowania" aria-live="polite"></p>
     </div>
@@ -212,37 +364,90 @@
   <!-- ---------- PANEL ---------- -->
   <div id="widokPanelu" style="display:none;">
 
-    <div class="pasek-akcji">
-      <span class="info" id="infoOdswiezenia"></span>
-      <button class="btn-glowny" id="btnOdswiez">Odśwież 🔄</button>
+    <div class="naglowek">
+      <div class="marka">
+        <span class="kanji">神社管理</span>
+        <span class="tytul">Panel Świątyni Przeznaczenia</span>
+      </div>
+      <div class="akcje">
+        <button class="btn-glowny" id="btnOdswiez">Odśwież</button>
+        <button class="btn-cichy" id="btnWyloguj">Wyloguj</button>
+      </div>
     </div>
 
-    <div class="karta status-duzy" id="kartaStatus"></div>
-
-    <div class="karta">
-      <h2>📊 Statystyki</h2>
-      <div class="statystyki" id="kontenerStatystyk"></div>
-      <p class="zart" id="zartOdmowy"></p>
+    <div class="zakladki" role="tablist">
+      <button class="zakladka aktywna" data-cel="tabPrzeglad" role="tab">📊 Przegląd</button>
+      <button class="zakladka" data-cel="tabOsCzasu" role="tab">🕐 Oś czasu</button>
+      <button class="zakladka" data-cel="tabLogi" role="tab">📜 Logi</button>
     </div>
 
-    <div class="karta">
-      <h2>🕐 Oś czasu</h2>
-      <div id="osCzasu"></div>
+    <!-- ===== PRZEGLĄD ===== -->
+    <div class="panel-zakladki aktywny" id="tabPrzeglad">
+      <div class="karta status-duzy" id="kartaStatus"></div>
+
+      <div class="karta">
+        <h3>Statystyki</h3>
+        <div class="kafle" id="kontenerKafli"></div>
+        <p class="zart" id="zartOdmowy"></p>
+      </div>
+
+      <div class="karta">
+        <h3>Droga przez świątynię</h3>
+        <ul class="droga" id="listaDrogi"></ul>
+      </div>
     </div>
 
+    <!-- ===== OŚ CZASU ===== -->
+    <div class="panel-zakladki" id="tabOsCzasu">
+      <div class="karta" id="osCzasu"></div>
+    </div>
+
+    <!-- ===== LOGI ===== -->
+    <div class="panel-zakladki" id="tabLogi">
+      <div class="karta">
+        <div class="logi-pasek">
+          <select id="filtrTypu" aria-label="Filtruj po typie">
+            <option value="">wszystkie typy</option>
+            <option value="wizyta">wizyta</option>
+            <option value="etap">etap</option>
+            <option value="proba">próba odmowy</option>
+            <option value="final">finał</option>
+          </select>
+          <input type="search" id="szukajka" placeholder="szukaj w logach…" aria-label="Szukaj w logach">
+          <button class="btn-cichy" id="btnEksportJson">⬇ JSON</button>
+          <button class="btn-cichy" id="btnEksportCsv">⬇ CSV</button>
+        </div>
+        <div class="tabela-otoczka">
+          <table>
+            <thead>
+              <tr><th>Czas</th><th>Typ</th><th>Szczegóły</th><th>Urządzenie</th></tr>
+            </thead>
+            <tbody id="cialoLogow"></tbody>
+          </table>
+        </div>
+        <p class="puste" id="logiPuste" style="display:none;">Brak logów pasujących do filtra.</p>
+      </div>
+    </div>
+
+    <p class="stopka-odswiezania" id="stopkaOdswiezania"></p>
   </div>
 </div>
 
 <script>
 const KLUCZ_TOKENU = "jinja-token";
+const CO_ILE_ODSWIEZAC_S = 30;
 
 const widokLogowania = document.getElementById("widokLogowania");
 const widokPanelu = document.getElementById("widokPanelu");
 const bladLogowania = document.getElementById("bladLogowania");
 
-let timerAutoOdswiezania = null;
+let zdarzenia = [];
+let timerOdswiezania = null;
+let sekundDoOdswiezenia = CO_ILE_ODSWIEZAC_S;
+let ostatnieOdswiezenie = null;
 
-/* ---------- logowanie ---------- */
+/* ================= logowanie ================= */
+
 document.getElementById("formLogowania").addEventListener("submit", async (e) => {
   e.preventDefault();
   bladLogowania.textContent = "";
@@ -271,20 +476,38 @@ function pokazPanel() {
   widokLogowania.style.display = "none";
   widokPanelu.style.display = "block";
   wczytajZdarzenia();
-  clearInterval(timerAutoOdswiezania);
-  timerAutoOdswiezania = setInterval(wczytajZdarzenia, 30000);
+  clearInterval(timerOdswiezania);
+  sekundDoOdswiezenia = CO_ILE_ODSWIEZAC_S;
+  timerOdswiezania = setInterval(() => {
+    sekundDoOdswiezenia--;
+    if (sekundDoOdswiezenia <= 0) { wczytajZdarzenia(); }
+    else renderujStopke();
+  }, 1000);
 }
 
 function wyloguj() {
   sessionStorage.removeItem(KLUCZ_TOKENU);
-  clearInterval(timerAutoOdswiezania);
+  clearInterval(timerOdswiezania);
   widokPanelu.style.display = "none";
   widokLogowania.style.display = "block";
 }
 
+document.getElementById("btnWyloguj").addEventListener("click", wyloguj);
 document.getElementById("btnOdswiez").addEventListener("click", wczytajZdarzenia);
 
-/* ---------- pobieranie zdarzeń ---------- */
+/* ================= zakładki ================= */
+
+document.querySelectorAll(".zakladka").forEach(z => {
+  z.addEventListener("click", () => {
+    document.querySelectorAll(".zakladka").forEach(x => x.classList.remove("aktywna"));
+    document.querySelectorAll(".panel-zakladki").forEach(x => x.classList.remove("aktywny"));
+    z.classList.add("aktywna");
+    document.getElementById(z.dataset.cel).classList.add("aktywny");
+  });
+});
+
+/* ================= pobieranie ================= */
+
 async function wczytajZdarzenia() {
   const token = sessionStorage.getItem(KLUCZ_TOKENU);
   if (!token) { wyloguj(); return; }
@@ -298,16 +521,25 @@ async function wczytajZdarzenia() {
 
     const dane = await odp.json();
     if (dane.ok) {
-      renderuj(dane.zdarzenia);
-      document.getElementById("infoOdswiezenia").textContent =
-        "odświeżono: " + new Date().toLocaleTimeString("pl-PL") + " · auto co 30 s";
+      zdarzenia = dane.zdarzenia;
+      ostatnieOdswiezenie = new Date();
+      sekundDoOdswiezenia = CO_ILE_ODSWIEZAC_S;
+      renderujWszystko();
     }
   } catch (err) {
-    document.getElementById("infoOdswiezenia").textContent = "błąd połączenia — spróbuję ponownie";
+    document.getElementById("stopkaOdswiezania").textContent = "⚠ błąd połączenia — ponowię automatycznie";
+    sekundDoOdswiezenia = CO_ILE_ODSWIEZAC_S;
   }
 }
 
-/* ---------- renderowanie ---------- */
+/* ================= pomocnicze ================= */
+
+function esc(s) {
+  return String(s).replace(/[&<>"']/g, c => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+  }[c]));
+}
+
 function czasWzgledny(iso) {
   const t = new Date(iso).getTime();
   if (!Number.isFinite(t)) return "?";
@@ -322,23 +554,97 @@ function czasWzgledny(iso) {
   return dni + " dni temu";
 }
 
+function czasAbsolutny(iso) {
+  const d = new Date(iso);
+  if (!Number.isFinite(d.getTime())) return "?";
+  return d.toLocaleString("pl-PL", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit" });
+}
+
+function dzienSlownie(iso) {
+  const d = new Date(iso);
+  const dzisiaj = new Date(); dzisiaj.setHours(0,0,0,0);
+  const tamten = new Date(d); tamten.setHours(0,0,0,0);
+  const roznica = Math.round((dzisiaj - tamten) / 86400000);
+  if (roznica === 0) return "dzisiaj";
+  if (roznica === 1) return "wczoraj";
+  return d.toLocaleDateString("pl-PL", { weekday: "long", day: "numeric", month: "long" });
+}
+
+function urzadzenie(ua) {
+  ua = String(ua || "");
+  let system = "?";
+  if (/iPhone/.test(ua)) system = "iPhone";
+  else if (/iPad/.test(ua)) system = "iPad";
+  else if (/Android/.test(ua)) system = "Android";
+  else if (/Windows/.test(ua)) system = "Windows";
+  else if (/Macintosh/.test(ua)) system = "Mac";
+  else if (/Linux/.test(ua)) system = "Linux";
+
+  let przegladarka = "";
+  if (/Edg\//.test(ua)) przegladarka = "Edge";
+  else if (/OPR\/|Opera/.test(ua)) przegladarka = "Opera";
+  else if (/SamsungBrowser/.test(ua)) przegladarka = "Samsung";
+  else if (/Firefox\//.test(ua)) przegladarka = "Firefox";
+  else if (/Chrome\//.test(ua)) przegladarka = "Chrome";
+  else if (/Safari\//.test(ua)) przegladarka = "Safari";
+
+  return przegladarka ? system + " · " + przegladarka : system;
+}
+
+function kategoriaZdarzenia(z) {
+  if (z.typ === "wizyta") return "wizyta";
+  if (z.typ === "final") return "final";
+  if (z.typ === "etap" && z.etap === "proba-odmowy") return "proba";
+  return "etap";
+}
+
 function opisZdarzenia(z) {
-  if (z.typ === "wizyta") return { ikona: "👣", tekst: "Weszła na stronę" };
+  if (z.typ === "wizyta") return { ikona: "👣", tekst: "Wejście na stronę" };
   if (z.typ === "final") {
-    let t = "🎉 WYBRAŁA: " + (z.ema || "?") + ", " + (z.dataSlownie || z.data || "?");
+    let t = "WYBRAŁA: " + (z.ema || "?") + ", " + (z.dataSlownie || z.data || "?");
     if (z.pora) t += ", " + z.pora;
     return { ikona: "⛩️", tekst: t };
   }
   if (z.typ === "etap") {
-    if (z.etap === "proba-odmowy") return { ikona: "🙃", tekst: "Próbowała odrzucić los (próba " + (z.probyOdmowy || "?") + ")" };
-    const nazwy = { 2: "Przeszła przez bramę torii", 3: "Wylosowała omikuji (大吉!)", 4: "Przyjęła przeznaczenie — wybiera emę", 5: "Wybiera dzień przeznaczenia" };
-    return { ikona: "⭐", tekst: nazwy[z.etap] || ("Etap: " + z.etap) };
+    if (z.etap === "proba-odmowy") return { ikona: "🙃", tekst: "Próba odrzucenia losu (nr " + (z.probyOdmowy ?? "?") + ")" };
+    if (z.etap === "Gra") return { ikona: "🦊", tekst: "Rozpoczęła próbę odwagi 試練 (mini-gra)" };
+    if (z.etap === "gra-ukonczona") {
+      let t = z.pominieta ? "Pominęła grę — duchy się zlitowały" : "Ukończyła grę — zebrała wszystkie płatki 🌸";
+      if (typeof z.czasGrySekundy === "number") t += " (" + z.czasGrySekundy + " s";
+      if (typeof z.trafieniaWLampiony === "number") t += ", " + z.trafieniaWLampiony + " trafień w lampiony";
+      if (typeof z.czasGrySekundy === "number") t += ")";
+      return { ikona: "🦊", tekst: t };
+    }
+    const nazwy = {
+      2: "Przeszła przez bramę torii",
+      3: "Wylosowała omikuji — 大吉",
+      4: "Przyjęła przeznaczenie, wybiera emę",
+      5: "Wybiera dzień przeznaczenia"
+    };
+    return { ikona: "⭐", tekst: nazwy[z.etap] || ("Etap " + z.etap) };
   }
   return { ikona: "❓", tekst: z.typ };
 }
 
-function renderuj(zdarzenia) {
-  /* STATUS */
+/* ================= renderowanie ================= */
+
+function renderujWszystko() {
+  renderujPrzeglad();
+  renderujOsCzasu();
+  renderujLogi();
+  renderujStopke();
+}
+
+function renderujStopke() {
+  const el = document.getElementById("stopkaOdswiezania");
+  if (!ostatnieOdswiezenie) { el.textContent = ""; return; }
+  el.textContent = "odświeżono " + ostatnieOdswiezenie.toLocaleTimeString("pl-PL") +
+    " · następne za " + Math.max(0, sekundDoOdswiezenia) + " s";
+}
+
+/* ----- przegląd ----- */
+
+function renderujPrzeglad() {
   const finaly = zdarzenia.filter(z => z.typ === "final");
   const kartaStatus = document.getElementById("kartaStatus");
 
@@ -347,9 +653,9 @@ function renderuj(zdarzenia) {
     kartaStatus.innerHTML =
       '<div class="etykieta">Czy już wybrała?</div>' +
       '<div class="wynik tak">TAK! 大吉 🎉</div>' +
-      '<div class="szczegoly">' + esc(f.ema || "?") + ' · ' + esc(f.dataSlownie || f.data || "?") +
-      (f.pora ? " · " + esc(f.pora) : "") + '</div>' +
-      '<div class="kiedy">kliknęła ' + czasWzgledny(f.timestamp) + '</div>';
+      '<div class="szczegoly">' + esc(f.ema || "?") + " · " + esc(f.dataSlownie || f.data || "?") +
+      (f.pora ? " · " + esc(f.pora) : "") + "</div>" +
+      '<div class="kiedy">kliknęła ' + czasWzgledny(f.timestamp) + " (" + czasAbsolutny(f.timestamp) + ")</div>";
   } else {
     const ostatnie = zdarzenia[0];
     kartaStatus.innerHTML =
@@ -357,47 +663,159 @@ function renderuj(zdarzenia) {
       '<div class="wynik nie">jeszcze nie…</div>' +
       '<div class="kiedy">' +
       (ostatnie ? "ostatnia aktywność: " + czasWzgledny(ostatnie.timestamp) : "cisza w świątyni — nikt jeszcze nie wszedł") +
-      '</div>';
+      "</div>";
   }
 
-  /* STATYSTYKI */
-  const wizyty = zdarzenia.filter(z => z.typ === "wizyta").length;
-  const etapy = zdarzenia.filter(z => z.typ === "etap" && typeof z.etap === "number").map(z => z.etap);
-  const najdalszy = finaly.length > 0 ? "finał" : (etapy.length > 0 ? "etap " + Math.max(...etapy) : "—");
-  const proby = zdarzenia.filter(z => z.etap === "proba-odmowy");
+  /* kafle */
+  const wizyty = zdarzenia.filter(z => z.typ === "wizyta");
+  const proby = zdarzenia.filter(z => kategoriaZdarzenia(z) === "proba");
   const maxProb = proby.reduce((m, z) => Math.max(m, z.probyOdmowy || 0), 0);
+  const pierwsza = zdarzenia.length ? zdarzenia[zdarzenia.length - 1] : null;
+  const ostatnia = zdarzenia.length ? zdarzenia[0] : null;
+  const urzadzenia = [...new Set(wizyty.map(z => urzadzenie(z.userAgent)))].filter(u => u !== "?");
 
-  document.getElementById("kontenerStatystyk").innerHTML =
-    '<div class="stat"><div class="liczba">' + wizyty + '</div><div class="opis">wizyt na stronie</div></div>' +
-    '<div class="stat"><div class="liczba">' + najdalszy + '</div><div class="opis">najdalszy etap</div></div>' +
-    '<div class="stat"><div class="liczba">' + maxProb + '</div><div class="opis">prób „Odrzucam los”</div></div>';
+  document.getElementById("kontenerKafli").innerHTML =
+    kafel(wizyty.length, "wizyt na stronie") +
+    kafel(zdarzenia.length, "zdarzeń łącznie") +
+    kafel(maxProb, "prób „Odrzucam los”") +
+    kafel(ostatnia ? czasWzgledny(ostatnia.timestamp) : "—", "ostatnia aktywność") +
+    kafel(pierwsza ? czasWzgledny(pierwsza.timestamp) : "—", "pierwsza wizyta") +
+    kafel(urzadzenia.length ? esc(urzadzenia.join(", ")) : "—", "urządzenia");
 
   document.getElementById("zartOdmowy").textContent =
     maxProb === 0 ? "ani razu nie próbowała odrzucić losu — dobry znak 🌸"
     : "próbowała odrzucić los " + maxProb + " " + (maxProb === 1 ? "raz" : "razy") + " — przycisk był szybszy 🙃";
 
-  /* OŚ CZASU */
+  /* droga przez świątynię */
+  const etapy = new Set(zdarzenia.filter(z => z.typ === "etap" && typeof z.etap === "number").map(z => z.etap));
+  const kroki = [
+    { nazwa: "⛩️ Wejście na stronę", ok: wizyty.length > 0, kiedy: pierwszeZdarzenie(z => z.typ === "wizyta") },
+    { nazwa: "🚪 Brama torii", ok: etapy.has(2), kiedy: pierwszeZdarzenie(z => z.typ === "etap" && z.etap === 2) },
+    { nazwa: "🎋 Omikuji — 大吉", ok: etapy.has(3), kiedy: pierwszeZdarzenie(z => z.typ === "etap" && z.etap === 3) },
+    { nazwa: "🦊 Próba odwagi (gra)", ok: zdarzenia.some(z => z.etap === "gra-ukonczona"), kiedy: pierwszeZdarzenie(z => z.etap === "gra-ukonczona") },
+    { nazwa: "🪵 Tabliczki ema", ok: etapy.has(4), kiedy: pierwszeZdarzenie(z => z.typ === "etap" && z.etap === 4) },
+    { nazwa: "📅 Kalendarz", ok: etapy.has(5), kiedy: pierwszeZdarzenie(z => z.typ === "etap" && z.etap === 5) },
+    { nazwa: "💮 Przypieczętowanie losu", ok: finaly.length > 0, kiedy: pierwszeZdarzenie(z => z.typ === "final") },
+  ];
+
+  document.getElementById("listaDrogi").innerHTML = kroki.map((k, i) =>
+    '<li class="' + (k.ok ? "zaliczony" : "") + '">' +
+    '<span class="znacznik">' + (k.ok ? "✓" : (i + 1)) + "</span>" +
+    '<span class="nazwa">' + k.nazwa + "</span>" +
+    '<span class="detal">' + (k.ok && k.kiedy ? czasWzgledny(k.kiedy.timestamp) : "") + "</span>" +
+    "</li>"
+  ).join("");
+}
+
+function kafel(wartosc, opis) {
+  return '<div class="kafel"><div class="liczba">' + wartosc + '</div><div class="opis">' + opis + "</div></div>";
+}
+
+function pierwszeZdarzenie(warunek) {
+  /* zdarzenia są od najnowszych, więc "pierwsze" = ostatni pasujący element */
+  for (let i = zdarzenia.length - 1; i >= 0; i--) {
+    if (warunek(zdarzenia[i])) return zdarzenia[i];
+  }
+  return null;
+}
+
+/* ----- oś czasu ----- */
+
+function renderujOsCzasu() {
   const os = document.getElementById("osCzasu");
   if (zdarzenia.length === 0) {
     os.innerHTML = '<p class="puste">Brak zdarzeń. Świątynia czeka. ⛩️</p>';
     return;
   }
 
-  os.innerHTML = zdarzenia.map(z => {
+  let html = "";
+  let poprzedniDzien = null;
+
+  for (const z of zdarzenia) {
+    const dzien = dzienSlownie(z.timestamp);
+    if (dzien !== poprzedniDzien) {
+      html += '<div class="dzien-separator">' + esc(dzien) + "</div>";
+      poprzedniDzien = dzien;
+    }
     const o = opisZdarzenia(z);
-    return '<div class="zdarzenie">' +
-      '<span class="ikona">' + o.ikona + '</span>' +
-      '<span class="opis">' + esc(o.tekst) + '</span>' +
-      '<span class="czas">' + czasWzgledny(z.timestamp) + '</span>' +
-      '</div>';
-  }).join("");
+    html += '<div class="zdarzenie">' +
+      '<span class="ikona">' + o.ikona + "</span>" +
+      '<span class="opis">' + esc(o.tekst) + "</span>" +
+      '<span class="czas" title="' + esc(czasAbsolutny(z.timestamp)) + '">' + czasWzgledny(z.timestamp) + "</span>" +
+      "</div>";
+  }
+
+  os.innerHTML = html;
 }
 
-function esc(s) {
-  return String(s).replace(/[&<>"']/g, c => ({
-    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
-  }[c]));
+/* ----- logi ----- */
+
+document.getElementById("filtrTypu").addEventListener("change", renderujLogi);
+document.getElementById("szukajka").addEventListener("input", renderujLogi);
+
+function przefiltrowane() {
+  const typ = document.getElementById("filtrTypu").value;
+  const fraza = document.getElementById("szukajka").value.trim().toLowerCase();
+
+  return zdarzenia.filter(z => {
+    if (typ && kategoriaZdarzenia(z) !== typ) return false;
+    if (fraza) {
+      const stog = JSON.stringify(z).toLowerCase() + " " + opisZdarzenia(z).tekst.toLowerCase();
+      if (!stog.includes(fraza)) return false;
+    }
+    return true;
+  });
 }
+
+function renderujLogi() {
+  const lista = przefiltrowane();
+  const cialo = document.getElementById("cialoLogow");
+  document.getElementById("logiPuste").style.display = lista.length ? "none" : "block";
+
+  cialo.innerHTML = lista.map((z, i) => {
+    const kat = kategoriaZdarzenia(z);
+    const o = opisZdarzenia(z);
+    const etykietyKategorii = { wizyta: "wizyta", etap: "etap", proba: "odmowa", final: "FINAŁ" };
+    return '<tr class="wiersz-logu" data-nr="' + i + '" title="kliknij, żeby zobaczyć surowe dane">' +
+      '<td><span class="czas-abs">' + esc(czasAbsolutny(z.timestamp)) + '</span>' +
+      '<span class="czas-rel">' + czasWzgledny(z.timestamp) + "</span></td>" +
+      '<td><span class="badge ' + kat + '">' + etykietyKategorii[kat] + "</span></td>" +
+      "<td>" + esc(o.tekst) + "</td>" +
+      "<td>" + esc(urzadzenie(z.userAgent)) + "</td>" +
+      "</tr>" +
+      '<tr class="szczegoly-logu" data-dla="' + i + '" style="display:none;">' +
+      '<td colspan="4"><pre>' + esc(JSON.stringify(z, null, 2)) + "</pre></td></tr>";
+  }).join("");
+
+  cialo.querySelectorAll("tr.wiersz-logu").forEach(tr => {
+    tr.addEventListener("click", () => {
+      const detale = cialo.querySelector('tr.szczegoly-logu[data-dla="' + tr.dataset.nr + '"]');
+      detale.style.display = detale.style.display === "none" ? "table-row" : "none";
+    });
+  });
+}
+
+/* ----- eksport ----- */
+
+function pobierzPlik(nazwa, tresc, typ) {
+  const blob = new Blob([tresc], { type: typ });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = nazwa;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+document.getElementById("btnEksportJson").addEventListener("click", () => {
+  pobierzPlik("unmei-zdarzenia.json", JSON.stringify(przefiltrowane(), null, 2), "application/json");
+});
+
+document.getElementById("btnEksportCsv").addEventListener("click", () => {
+  const kolumny = ["timestamp", "typ", "etap", "ema", "data", "pora", "probyOdmowy", "userAgent"];
+  const wiersz = (wartosci) => wartosci.map(w => '"' + String(w ?? "").replace(/"/g, '""') + '"').join(";");
+  const csv = [wiersz(kolumny), ...przefiltrowane().map(z => wiersz(kolumny.map(k => z[k])))].join("\r\n");
+  pobierzPlik("unmei-zdarzenia.csv", "﻿" + csv, "text/csv;charset=utf-8");
+});
 
 /* automatyczne wejście, jeśli token już jest w sessionStorage */
 if (sessionStorage.getItem(KLUCZ_TOKENU)) pokazPanel();
