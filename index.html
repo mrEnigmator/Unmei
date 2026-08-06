@@ -7,7 +7,7 @@
 <title>運命 — Świątynia Przeznaczenia</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700;800&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700;800&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=Playfair+Display:wght@600;700;800&family=Lato:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
   :root {
     --noc1: #10131f;
@@ -32,13 +32,13 @@
     background: linear-gradient(180deg, var(--noc1) 0%, var(--noc2) 55%, var(--noc3) 100%);
     background-attachment: fixed;
     color: var(--tekst);
-    font-family: "Zen Kaku Gothic New", sans-serif;
+    font-family: "Lato", "Zen Kaku Gothic New", sans-serif;
     overflow-x: hidden;
     line-height: 1.6;
   }
 
   h1, h2, .kanji, .znak {
-    font-family: "Shippori Mincho", serif;
+    font-family: "Playfair Display", "Shippori Mincho", serif;
   }
 
   /* ---------- Księżyc ---------- */
@@ -384,7 +384,7 @@
 
   .pudelko .napis-pion {
     writing-mode: vertical-rl;
-    font-family: "Shippori Mincho", serif;
+    font-family: "Playfair Display", "Shippori Mincho", serif;
     font-size: 1.5rem;
     color: var(--zloto);
     letter-spacing: 0.3em;
@@ -463,7 +463,7 @@
   .wers:first-of-type { margin-top: 28px; }
 
   .wers .kanji-maly {
-    font-family: "Shippori Mincho", serif;
+    font-family: "Playfair Display", "Shippori Mincho", serif;
     color: var(--torii);
     font-weight: 700;
     font-size: 1.15rem;
@@ -651,7 +651,7 @@
   .gra-overlay.widoczny { display: flex; animation: pojawienie 0.5s ease both; }
 
   .gra-overlay .duzy {
-    font-family: "Shippori Mincho", serif;
+    font-family: "Playfair Display", "Shippori Mincho", serif;
     font-size: 2rem;
     font-weight: 800;
     color: var(--zloto);
@@ -708,7 +708,7 @@
   }
 
   .kalendarz-naglowek .miesiac {
-    font-family: "Shippori Mincho", serif;
+    font-family: "Playfair Display", "Shippori Mincho", serif;
     font-weight: 700;
     font-size: 1.05rem;
     color: var(--papier);
@@ -820,7 +820,7 @@
     border: 3px solid var(--torii);
     border-radius: 8px;
     color: var(--torii);
-    font-family: "Shippori Mincho", serif;
+    font-family: "Playfair Display", "Shippori Mincho", serif;
     font-weight: 800;
     font-size: 1.4rem;
     display: flex;
@@ -831,7 +831,7 @@
   }
 
   .final-karta .kanji-final {
-    font-family: "Shippori Mincho", serif;
+    font-family: "Playfair Display", "Shippori Mincho", serif;
     font-size: 2.2rem;
     color: var(--torii);
     font-weight: 800;
@@ -840,7 +840,7 @@
   .final-karta p { margin-top: 16px; font-size: 1rem; }
 
   .odliczanie {
-    font-family: "Shippori Mincho", serif;
+    font-family: "Playfair Display", "Shippori Mincho", serif;
     color: var(--torii);
     font-weight: 700;
     font-size: 1.05rem;
@@ -849,7 +849,7 @@
 
   .final-karta .podpis {
     margin-top: 22px;
-    font-family: "Shippori Mincho", serif;
+    font-family: "Playfair Display", "Shippori Mincho", serif;
     font-weight: 700;
     color: #5a2320;
   }
@@ -956,12 +956,16 @@
         <p>ktoś zbudował dla Ciebie całą świątynię w internecie. To dobry znak.</p>
       </div>
       <div class="wers">
-        <span class="kanji-maly">旅</span><span class="etykieta">tabi — Podróż</span>
-        <p>krótka wyprawa w towarzystwie pewnej osoby przyniesie szczęście.</p>
+        <span class="kanji-maly">珈</span><span class="etykieta">kōhī — Kawa</span>
+        <p>filiżanka czegoś ciepłego smakuje podwójnie, gdy pije się ją we dwoje.</p>
       </div>
       <div class="wers">
-        <span class="kanji-maly">食</span><span class="etykieta">shoku — Jedzenie</span>
-        <p>coś pysznego czeka, ale tylko we dwoje.</p>
+        <span class="kanji-maly">旅</span><span class="etykieta">tabi — Droga</span>
+        <p>spacer pod gwiazdami albo krótka przejażdżka w dobrym towarzystwie przyniosą szczęście.</p>
+      </div>
+      <div class="wers">
+        <span class="kanji-maly">夢</span><span class="etykieta">yume — Marzenie</span>
+        <p>a jeśli los podpowie Ci własną ścieżkę — wybierz ją śmiało. Duchy lubią odważne pomysły.</p>
       </div>
 
       <p class="final-wrozby">Wróżba mówi jasno: randka ze mną jest zapisana w gwiazdach. Z losem się nie dyskutuje. 🌸</p>
@@ -2129,10 +2133,10 @@ btnPieczec.addEventListener("click", () => {
 
     /* nagłówek */
     c.fillStyle = "#9e2f2c";
-    c.font = "700 54px 'Shippori Mincho', serif";
+    c.font = "700 54px 'Playfair Display', 'Shippori Mincho', serif";
     c.fillText("運命神社", 310, 110);
     c.fillStyle = "#8a7a63";
-    c.font = "20px 'Zen Kaku Gothic New', sans-serif";
+    c.font = "20px 'Lato', 'Zen Kaku Gothic New', sans-serif";
     c.fillText("goshuin · pieczęć Świątyni Przeznaczenia", 310, 145);
 
     /* wielka okrągła pieczęć */
@@ -2144,30 +2148,30 @@ btnPieczec.addEventListener("click", () => {
     c.beginPath(); c.arc(0, 0, 118, 0, 6.29);
     c.strokeStyle = "#f5efe2"; c.lineWidth = 3; c.stroke();
     c.fillStyle = "#f5efe2";
-    c.font = "800 92px 'Shippori Mincho', serif";
+    c.font = "800 92px 'Playfair Display', 'Shippori Mincho', serif";
     c.fillText("大吉", 0, 32);
     c.restore();
 
     /* dane */
     c.fillStyle = "#3c2f26";
-    c.font = "700 34px 'Shippori Mincho', serif";
+    c.font = "700 34px 'Playfair Display', 'Shippori Mincho', serif";
     c.fillText(goscInfo && goscInfo.imie ? goscInfo.imie : "Wybranka losu", 310, 540);
     c.fillStyle = "#8a7a63";
-    c.font = "20px 'Zen Kaku Gothic New', sans-serif";
+    c.font = "20px 'Lato', 'Zen Kaku Gothic New', sans-serif";
     c.fillText("poznała swoje przeznaczenie", 310, 572);
 
     c.fillStyle = "#3c2f26";
-    c.font = "26px 'Zen Kaku Gothic New', sans-serif";
+    c.font = "26px 'Lato', 'Zen Kaku Gothic New', sans-serif";
     const fmt = new Intl.DateTimeFormat("pl-PL", { weekday: "long", day: "numeric", month: "long" });
     c.fillText("💮 " + (wybranaEma || "randka"), 310, 630);
     c.fillText(fmt.format(wybranaData) + (wybranaPora ? " · " + wybranaPora : ""), 310, 668);
 
     /* stopka */
     c.fillStyle = "#9e2f2c";
-    c.font = "700 30px 'Shippori Mincho', serif";
+    c.font = "700 30px 'Playfair Display', 'Shippori Mincho', serif";
     c.fillText("縁結び", 310, 748);
     c.fillStyle = "#8a7a63";
-    c.font = "18px 'Zen Kaku Gothic New', sans-serif";
+    c.font = "18px 'Lato', 'Zen Kaku Gothic New', sans-serif";
     c.fillText("en-musubi — związanie losów · " + new Date().toLocaleDateString("pl-PL"), 310, 780);
 
     const a = document.createElement("a");
