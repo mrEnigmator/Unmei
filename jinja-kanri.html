@@ -232,44 +232,6 @@
 
   .kafel .opis { font-size: 0.75rem; color: var(--tekst-przyg); margin-top: 3px; }
 
-  /* ---------- przegląd: droga przez świątynię ---------- */
-  .droga { list-style: none; }
-
-  .droga li {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 9px 0;
-    border-bottom: 1px dashed var(--linia);
-    font-size: 0.92rem;
-  }
-
-  .droga li:last-child { border-bottom: none; }
-
-  .droga .znacznik {
-    flex: 0 0 auto;
-    width: 26px;
-    height: 26px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.8rem;
-    border: 2px solid var(--linia);
-    color: var(--tekst-przyg);
-  }
-
-  .droga li.zaliczony .znacznik {
-    background: radial-gradient(circle at 40% 35%, #d85450 0%, var(--torii) 60%, var(--torii-ciemny) 100%);
-    border-color: transparent;
-    color: #fff;
-  }
-
-  .droga li.zaliczony .nazwa { color: var(--tekst); }
-  .droga .nazwa { flex: 1; color: var(--tekst-przyg); }
-  .droga .detal { color: var(--tekst-przyg); font-size: 0.8rem; }
-  .droga li.zaliczony .detal { color: var(--zloto); }
-
   .zart { text-align: center; color: var(--sakura); font-size: 0.86rem; font-style: italic; margin-top: 12px; }
 
   /* ---------- postać w grze ---------- */
@@ -583,11 +545,6 @@
         <div class="kafle" id="kontenerKafli"></div>
         <div class="tabela-otoczka" id="statGoscie" style="margin-top:16px;"></div>
         <p class="zart" id="zartOdmowy"></p>
-      </div>
-
-      <div class="karta">
-        <h3>Droga przez świątynię</h3>
-        <ul class="droga" id="listaDrogi"></ul>
       </div>
 
       <div class="karta">
@@ -954,37 +911,10 @@ function renderujPrzeglad() {
       "próbowała odrzucić los aż " + maxProb + " " + (maxProb === 1 ? "raz" : "razy") + " — przycisk był szybszy 🙃";
   }
 
-  /* droga przez świątynię */
-  const etapy = new Set(zdarzenia.filter(z => z.typ === "etap" && typeof z.etap === "number").map(z => z.etap));
-  const kroki = [
-    { nazwa: "⛩️ Wejście na stronę", ok: wizyty.length > 0, kiedy: pierwszeZdarzenie(z => z.typ === "wizyta") },
-    { nazwa: "🚪 Brama torii", ok: etapy.has(2), kiedy: pierwszeZdarzenie(z => z.typ === "etap" && z.etap === 2) },
-    { nazwa: "🎋 Omikuji — 大吉", ok: etapy.has(3), kiedy: pierwszeZdarzenie(z => z.typ === "etap" && z.etap === 3) },
-    { nazwa: "🦊 Próba odwagi (gra)", ok: zdarzenia.some(z => z.etap === "gra-ukonczona"), kiedy: pierwszeZdarzenie(z => z.etap === "gra-ukonczona") },
-    { nazwa: "🪵 Tabliczki ema", ok: etapy.has(4), kiedy: pierwszeZdarzenie(z => z.typ === "etap" && z.etap === 4) },
-    { nazwa: "📅 Kalendarz", ok: etapy.has(5), kiedy: pierwszeZdarzenie(z => z.typ === "etap" && z.etap === 5) },
-    { nazwa: "💮 Przypieczętowanie losu", ok: finaly.length > 0, kiedy: pierwszeZdarzenie(z => z.typ === "final") },
-  ];
-
-  document.getElementById("listaDrogi").innerHTML = kroki.map((k, i) =>
-    '<li class="' + (k.ok ? "zaliczony" : "") + '">' +
-    '<span class="znacznik">' + (k.ok ? "✓" : (i + 1)) + "</span>" +
-    '<span class="nazwa">' + k.nazwa + "</span>" +
-    '<span class="detal">' + (k.ok && k.kiedy ? czasWzgledny(k.kiedy.timestamp) : "") + "</span>" +
-    "</li>"
-  ).join("");
 }
 
 function kafel(wartosc, opis) {
   return '<div class="kafel"><div class="liczba">' + wartosc + '</div><div class="opis">' + opis + "</div></div>";
-}
-
-function pierwszeZdarzenie(warunek) {
-  /* zdarzenia są od najnowszych, więc "pierwsze" = ostatni pasujący element */
-  for (let i = zdarzenia.length - 1; i >= 0; i--) {
-    if (warunek(zdarzenia[i])) return zdarzenia[i];
-  }
-  return null;
 }
 
 /* ----- oś czasu ----- */
